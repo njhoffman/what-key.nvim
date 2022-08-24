@@ -50,14 +50,15 @@ end
 function M.get_operator(prefix_i)
   for op_n, _ in pairs(Config.options.operators) do
     local op_i = Util.t(op_n)
-    if prefix_i:sub(1, #op_i) == op_i then
+    if (prefix_i ~= nil and prefix_i:sub(1, #op_i) == op_i) then
       return op_i, op_n
     end
   end
 end
 
 function M.process_motions(ret, mode, prefix, buf)
-  local operator = mode == "v" and "" or M.get_operator(prefix)
+  if prefix == nil then return end
+  local operator = (mode == "v" and "") or M.get_operator(prefix)
   if (mode == "n" or mode == "v" and extra ~= true) and operator then
     local op_prefix = prefix:sub(#operator + 1)
     local op_count = op_prefix:match("^(%d+)")
@@ -72,7 +73,7 @@ function M.process_motions(ret, mode, prefix, buf)
     end
     local op_results = M.get_mappings("o", op_prefix_i, buf)
 
-    if not ret.mapping and op_results.mapping then
+    if type(op_n) == 'number' and not ret.mapping and op_results.mapping then
       ret.mapping = op_results.mapping
       ret.mapping.prefix = op_n .. (op_count or "") .. ret.mapping.prefix
       ret.mapping.keys = Util.parse_keys(ret.mapping.prefix)
@@ -265,6 +266,8 @@ function M.map(mode, prefix_n, cmd, buf, opts)
   if other then
     table.insert(M.duplicates, { mode = mode, prefix = prefix_n, cmd = cmd, buf = buf, other = other })
   end
+
+  -- cmd = cmd:gsub("[\\]", "<bslash>")                                                      │    │
   if buf ~= nil then
     pcall(vim.api.nvim_buf_set_keymap, buf, mode, prefix_n, cmd, opts)
   else
@@ -393,6 +396,15 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
     local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true})<cr>]]
+
+    -- │ 391│    if vim.g.mapleader == "\\" or vim.g.mapleader == nil then                             │    │
+    -- │ 392│      prefix_n = prefix_n:gsub("<[lL]eader>", "\\")                                       │    │
+    -- │ 393│    end                                                                                   │    │
+    -- │ 394│    if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then                   │    │
+    -- │ 395│      prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")                                  │    │
+    -- │ 396│    end                                                                                   │    │
+
+
     cmd = string.format(cmd, Util.t(prefix_n), mode)
     -- map group triggers and nops
     -- nops are needed, so that WhichKey always respects timeoutlen

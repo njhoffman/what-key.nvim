@@ -31,6 +31,7 @@ function M.setup()
       else
         mappings[op] = { name = label }
       end
+      mappings[op] = { name = label }
     end
   end
   for _, t in pairs(Config.options.triggers_nowait) do

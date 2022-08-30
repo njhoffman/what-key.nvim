@@ -444,22 +444,75 @@ end
 function M.dump()
   local ok = {}
   local todo = {}
+  local conflicts = {}
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
     tree.tree:walk( ---@param node Node
       function(node)
+        local count = 0
+        for _ in pairs(node.children) do
+          count = count + 1
+        end
+        local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
+        if node.prefix_i ~= "" and count > 0 and not auto_prefix then
+          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count, node.mapping.prefix, node.mapping.cmd or " ")
+          table.insert(conflicts, msg)
+          -- conflicts[tree.mode] = conflicts[tree.mode] or {}
+          -- conflicts[tree.mode][node.mapping.prefix] = node.children
+        end
+
         if node.mapping then
           if node.mapping.label then
-            ok[node.mapping.prefix] = true
-            todo[node.mapping.prefix] = nil
+            ok[tree.mode] = ok[tree.mode] or {}
+            todo[tree.mode] = todo[tree.mode] or {}
+            ok[tree.mode][node.mapping.prefix] = node.mapping.label
+            todo[tree.mode][node.mapping.prefix] = nil
           elseif not ok[node.mapping.prefix] then
-            todo[node.mapping.prefix] = { node.mapping.cmd or "" }
+            todo[tree.mode] = todo[tree.mode] or {}
+            todo[tree.mode][node.mapping.prefix] = node.mapping.cmd or ""
           end
         end
       end
     )
   end
-  return todo
+
+  local dupes = {}
+  for _, dup in pairs(M.duplicates) do
+    local msg = ""
+    if dup.buf == dup.other.buffer then
+      msg = "duplicate keymap"
+    else
+      msg = "buffer-local keymap overriding global"
+    end
+    msg = (msg .. " for mode **%q**, buf: %d, lhs: **%q**"):format(dup.mode, dup.buf or 0, dup.prefix)
+    table.insert(dupes, msg)
+    -- vim.fn["health#report_info"](("old rhs: `%s`"):format(dup.other.rhs or ""))
+    -- vim.fn["health#report_info"](("new rhs: `%s`"):format(dup.cmd or ""))
+  end
+  return todo, ok, conflicts, dupes
+end
+
+function M.dump_out()
+  local todo, ok, conflicts, dupes = M.dump()
+  local lines = {}
+
+  for _, conflict in ipairs(conflicts) do
+    table.insert(lines, "conf: " .. conflict)
+  end
+
+  for mode, keys in pairs(ok) do
+    for key, def in pairs(keys) do
+      table.insert(lines, "ok:   (" .. mode .. ') "' .. key .. '" ' .. def)
+    end
+  end
+
+  for mode, keys in pairs(todo) do
+    for key, def in pairs(keys) do
+      table.insert(lines, "todo: (" .. mode .. ") " .. '"' .. key .. '" ' .. def)
+    end
+  end
+
+  return lines
 end
 
 function M.check_health()
@@ -544,14 +597,7 @@ function M.update_keymaps(mode, buf)
       if is_no_op(keymap) then
         skip = true
       else
-        Util.warn(
-          string.format(
-            "Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping",
-            mode,
-            buf or 0,
-            keymap.rhs
-          )
-        )
+        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
       end
     end
 
@@ -562,6 +608,7 @@ function M.update_keymaps(mode, buf)
         cmd = keymap.rhs,
         desc = keymap.desc,
         keys = Util.parse_keys(keymap.lhs),
+        label = keymap.label or keymap.desc,
       }
       -- don't include Plug keymaps
       if mapping.keys.notation[1]:lower() ~= "<plug>" then

@@ -137,6 +137,7 @@ function Layout:layout(win)
   max_label_width = column_width - (intro_width + max_value_width)
 
   local columns = math.floor(width / column_width)
+  vim.dbglog("width", width, column_width, columns)
 
   local height = math.ceil(#self.items / columns)
   if height < self.options.layout.height.min then

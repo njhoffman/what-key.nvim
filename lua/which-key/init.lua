@@ -45,7 +45,12 @@ function M.show(keys, opts)
   -- update only trees related to buf
   Keys.update(buf)
   -- trigger which key
-  require("which-key.view").open(keys, opts)
+  if (opts.timeout) then
+    vim.fn.timer_start(opts.timeout,
+      function() require("which-key.view").open(keys, opts) end)
+  else
+    require("which-key.view").open(keys, opts)
+  end
 end
 
 function M.show_command(keys, mode)

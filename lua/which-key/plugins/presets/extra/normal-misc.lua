@@ -3,7 +3,7 @@ local M = {}
 M.name = "misc"
 
 local misc = {
-  windows = {
+  Windows = {
     ["<c-w>"] = {
       name = "window",
       s = "Split window",
@@ -17,6 +17,7 @@ local misc = {
       ["<lt>"] = "Decrease width",
       [">"] = "Increase width",
       ["|"] = "Max out the width",
+      ["_"] = "Max out the height",
       ["="] = "Equally high and wide",
       h = "Go to the left window",
       l = "Go to the right window",

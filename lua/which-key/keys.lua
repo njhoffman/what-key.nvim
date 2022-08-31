@@ -13,7 +13,10 @@ M.operators = {}
 M.nowait = {}
 M.blacklist = {}
 
+local extra = false
+
 function M.setup()
+  extra = Config.options.plugins.presets.extra
   local builtin_ops = require("which-key.plugins.presets").operators
   for op, _ in pairs(builtin_ops) do
     M.operators[op] = true
@@ -22,7 +25,11 @@ function M.setup()
   for op, label in pairs(Config.options.operators) do
     M.operators[op] = true
     if builtin_ops[op] then
-      mappings[op] = { name = label }
+      if extra ~= true then
+        mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
+      else
+        mappings[op] = { name = label }
+      end
     end
   end
   for _, t in pairs(Config.options.triggers_nowait) do
@@ -52,7 +59,7 @@ function M.process_motions(ret, mode, prefix_i, buf)
   if mode ~= "v" then
     op_i, op_n = M.get_operator(prefix_i)
   end
-  if (mode == "n" or mode == "v") and op_i then
+  if (mode == "n" or mode == "v" and extra ~= true) and op_i then
     local op_prefix_i = prefix_i:sub(#op_i + 1)
     local op_count = op_prefix_i:match("^(%d+)")
     if op_count == "0" then
@@ -447,7 +454,7 @@ function M.dump()
   local conflicts = {}
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
-    tree.tree:walk(---@param node Node
+    tree.tree:walk( ---@param node Node
       function(node)
         local count = 0
         for _ in pairs(node.children) do
@@ -455,8 +462,7 @@ function M.dump()
         end
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
         if node.prefix_i ~= "" and count > 0 and not auto_prefix then
-          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count,
-            node.mapping.prefix, node.mapping.cmd or " ")
+          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count, node.mapping.prefix, node.mapping.cmd or " ")
           table.insert(conflicts, msg)
           -- conflicts[tree.mode] = conflicts[tree.mode] or {}
           -- conflicts[tree.mode][node.mapping.prefix] = node.children
@@ -520,7 +526,7 @@ function M.check_health()
   vim.fn["health#report_start"]("WhichKey: checking conflicting keymaps")
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
-    tree.tree:walk(---@param node Node
+    tree.tree:walk( ---@param node Node
       function(node)
         local count = 0
         for _ in pairs(node.children) do
@@ -529,7 +535,8 @@ function M.check_health()
 
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
         if node.prefix_i ~= "" and count > 0 and not auto_prefix then
-          local msg = ("conflicting keymap exists for mode **%q**, lhs: **%q**"):format(tree.mode, node.mapping.prefix)
+          local msg = "conflicting keymap exists for mode **%q**, lhs: **%q**"
+          msg = msg:format(tree.mode, node.mapping.prefix)
           vim.fn["health#report_warn"](msg)
           local cmd = node.mapping.cmd or " "
           vim.fn["health#report_info"](("rhs: `%s`"):format(cmd))
@@ -598,8 +605,7 @@ function M.update_keymaps(mode, buf)
       if is_no_op(keymap) then
         skip = true
       else
-        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping"
-          , mode, buf or 0, keymap.rhs))
+        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
       end
     end
 

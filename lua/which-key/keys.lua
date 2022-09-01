@@ -14,6 +14,7 @@ M.nowait = {}
 M.blacklist = {}
 
 local extra = false
+local backslash_esc = false
 
 function M.setup()
   extra = Config.options.plugins.presets.extra
@@ -26,7 +27,8 @@ function M.setup()
     M.operators[op] = true
     if builtin_ops[op] then
       if extra ~= true then
-        mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
+        -- mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
+        mappings[op] = { name = label }
       else
         mappings[op] = { name = label }
       end
@@ -306,12 +308,6 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
     local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true})<cr>]]
-    if vim.g.mapleader == "\\" or vim.g.mapleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]eader>", "\\")
-    end
-    if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")
-    end
     cmd = string.format(cmd, Util.t(prefix_n), mode)
     -- map group triggers and nops
     -- nops are needed, so that WhichKey always respects timeoutlen

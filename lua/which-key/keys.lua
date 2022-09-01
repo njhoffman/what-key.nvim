@@ -14,6 +14,7 @@ M.nowait = {}
 M.blacklist = {}
 
 local extra = false
+local backslash_esc = false
 
 function M.setup()
   extra = Config.options.plugins.presets.extra
@@ -26,7 +27,8 @@ function M.setup()
     M.operators[op] = true
     if builtin_ops[op] then
       if extra ~= true then
-        mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
+        -- mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
+        mappings[op] = { name = label }
       else
         mappings[op] = { name = label }
       end
@@ -261,12 +263,15 @@ function M.map(mode, prefix_n, cmd, buf, opts)
   local other = vim.api.nvim_buf_call(buf or 0, function()
     local ret = vim.fn.maparg(prefix_n, mode, false, true)
     ---@diagnostic disable-next-line: undefined-field
-    return (ret and ret.lhs and ret.rhs ~= cmd) and ret or nil
+    return (ret and ret.lhs and ret.rhs and ret.rhs ~= cmd) and ret or nil
+    -- return (ret and ret.lhs and ret.rhs ~= cmd) and ret or nil
   end)
   if other then
     table.insert(M.duplicates, { mode = mode, prefix = prefix_n, cmd = cmd, buf = buf, other = other })
   end
-  cmd = cmd:gsub("[\\]", "<bslash>")
+  if backslash_esc then
+    cmd = cmd:gsub("[\\]", "<bslash>")
+  end
   if buf ~= nil then
     pcall(vim.api.nvim_buf_set_keymap, buf, mode, prefix_n, cmd, opts)
   else
@@ -395,11 +400,13 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
     local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true, timeout = 1000 })<cr>]]
-    if vim.g.mapleader == "\\" or vim.g.mapleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]eader>", "\\")
-    end
-    if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")
+    if backslash_esc then
+      if vim.g.mapleader == "\\" or vim.g.mapleader == nil then
+        prefix_n = prefix_n:gsub("<[lL]eader>", "\\")
+      end
+      if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then
+        prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")
+      end
     end
     cmd = string.format(cmd, Util.t(prefix_n), mode)
     -- map group triggers and nops

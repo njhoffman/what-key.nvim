@@ -55,7 +55,9 @@ function M.show_command(keys, mode)
   mode = mode or "n"
   keys = Util.t(keys)
   if not Util.check_mode(mode) then
-    Util.error("Invalid mode passed to :WhichKey (Dont create any keymappings to trigger WhichKey. WhichKey does this automaytically)")
+    Util.error(
+      "Invalid mode passed to :WhichKey (Don't create any keymappings to trigger WhichKey. WhichKey does this automatically)"
+    )
   else
     M.show(keys, { mode = mode })
   end

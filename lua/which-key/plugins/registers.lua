@@ -1,5 +1,5 @@
+---@type Plugin
 local extra = require("which-key.config").options.plugins.presets.extra
-
 local M = {}
 
 M.name = "registers"

@@ -6,7 +6,8 @@ M.name = "registers"
 
 M.actions = {
   { trigger = '"', mode = "n" },
-  { trigger = "@", mode = "n" },
+  { trigger = '"', mode = "v" },
+  { trigger = "@", mode = "n", delay = true },
   { trigger = "<c-r>", mode = "i" },
   { trigger = "<c-r>", mode = "c" },
 }

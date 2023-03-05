@@ -152,9 +152,9 @@ function M.get_mappings(mode, prefix_i, buf)
       local exists = false
       for k, v in pairs(tmp) do
         if type(v) == "table" and v.key == value.key then
-            tmp[k] = value
-            exists = true
-            break
+          tmp[k] = value
+          exists = true
+          break
         end
       end
       if not exists then
@@ -515,15 +515,7 @@ function M.update_keymaps(mode, buf)
       if is_no_op(keymap) then
         skip = true
       else
-        Util.warn(
-          string.format(
-            "Your <leader> key for %q mode in buf %d is currently mapped to %q. "
-              .. "WhichKey automatically creates triggers, so please remove the mapping",
-            mode,
-            buf or 0,
-            keymap.rhs
-          )
-        )
+        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. " .. "WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
       end
     end
 

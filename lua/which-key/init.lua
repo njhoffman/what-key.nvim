@@ -46,12 +46,7 @@ function M.show(keys, opts)
   -- update only trees related to buf
   Keys.update(buf)
   -- trigger which key
-  if (opts.timeout) then
-    vim.fn.timer_start(opts.timeout,
-      function() require("which-key.view").open(keys, opts) end)
-  else
-    require("which-key.view").open(keys, opts)
-  end
+  require("which-key.view").open(keys, opts)
 end
 
 function M.show_command(keys, mode)
@@ -61,9 +56,7 @@ function M.show_command(keys, mode)
   mode = mode or "n"
   keys = Util.t(keys)
   if not Util.check_mode(mode) then
-    Util.error(
-      "Invalid mode passed to :WhichKey (Don't create any keymappings to trigger WhichKey. WhichKey does this automatically)"
-    )
+    Util.error("Invalid mode passed to :WhichKey (Dont create any keymappings to trigger WhichKey. WhichKey does this automaytically)")
   else
     M.show(keys, { mode = mode })
   end

@@ -14,7 +14,6 @@ M.nowait = {}
 M.blacklist = {}
 
 local extra = false
-local backslash_esc = false
 
 function M.setup()
   extra = Config.options.plugins.presets.extra
@@ -27,8 +26,7 @@ function M.setup()
     M.operators[op] = true
     if builtin_ops[op] then
       if extra ~= true then
-        -- mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
-        mappings[op] = { name = label }
+        mappings[op] = { name = label, i = { name = "inside" }, a = { name = "around" } }
       else
         mappings[op] = { name = label }
       end
@@ -307,9 +305,6 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   local id_global = M.hook_id(prefix_n, mode)
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
-<<<<<<< HEAD
-    local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true})<cr>]]
-||||||| parent of 5abadbe (Add timeout option to delay showing popup panel)
     local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true})<cr>]]
     if vim.g.mapleader == "\\" or vim.g.mapleader == nil then
       prefix_n = prefix_n:gsub("<[lL]eader>", "\\")
@@ -317,15 +312,6 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
     if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then
       prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")
     end
-=======
-    local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true, timeout = 1000 })<cr>]]
-    if vim.g.mapleader == "\\" or vim.g.mapleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]eader>", "\\")
-    end
-    if vim.g.maplocalleader == "\\" or vim.g.maplocalleader == nil then
-      prefix_n = prefix_n:gsub("<[lL]ocalleader>", "\\")
-    end
->>>>>>> 5abadbe (Add timeout option to delay showing popup panel)
     cmd = string.format(cmd, Util.t(prefix_n), mode)
     -- map group triggers and nops
     -- nops are needed, so that WhichKey always respects timeoutlen
@@ -379,14 +365,7 @@ function M.dump()
   local conflicts = {}
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
-<<<<<<< HEAD
-    tree.tree:walk(
-      ---@param node Node
-||||||| parent of 5abadbe (Add timeout option to delay showing popup panel)
     tree.tree:walk( ---@param node Node
-=======
-    tree.tree:walk(---@param node Node
->>>>>>> 5abadbe (Add timeout option to delay showing popup panel)
       function(node)
         local count = 0
         for _ in pairs(node.children) do
@@ -394,8 +373,7 @@ function M.dump()
         end
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
         if node.prefix_i ~= "" and count > 0 and not auto_prefix then
-          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count,
-            node.mapping.prefix, node.mapping.cmd or " ")
+          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count, node.mapping.prefix, node.mapping.cmd or " ")
           table.insert(conflicts, msg)
           -- conflicts[tree.mode] = conflicts[tree.mode] or {}
           -- conflicts[tree.mode][node.mapping.prefix] = node.children
@@ -459,14 +437,7 @@ function M.check_health()
   vim.health.report_start("WhichKey: checking conflicting keymaps")
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
-<<<<<<< HEAD
-    tree.tree:walk(
-      ---@param node Node
-||||||| parent of 5abadbe (Add timeout option to delay showing popup panel)
     tree.tree:walk( ---@param node Node
-=======
-    tree.tree:walk(---@param node Node
->>>>>>> 5abadbe (Add timeout option to delay showing popup panel)
       function(node)
         local count = 0
         for _ in pairs(node.children) do
@@ -476,7 +447,7 @@ function M.check_health()
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
         if node.prefix_i ~= "" and count > 0 and not auto_prefix then
           local msg = ("conflicting keymap exists for mode **%q**, lhs: **%q**"):format(tree.mode, node.mapping.prefix)
-          vim.health.report_warn(msg)
+          vim.fn["health#report_warn"](msg)
           local cmd = node.mapping.cmd or " "
           vim.health.report_info(("rhs: `%s`"):format(cmd))
         end
@@ -546,14 +517,7 @@ function M.update_keymaps(mode, buf)
       if is_no_op(keymap) then
         skip = true
       else
-<<<<<<< HEAD
-        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. " .. "WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
-||||||| parent of 5abadbe (Add timeout option to delay showing popup panel)
         Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
-=======
-        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping"
-          , mode, buf or 0, keymap.rhs))
->>>>>>> 5abadbe (Add timeout option to delay showing popup panel)
       end
     end
 

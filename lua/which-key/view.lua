@@ -17,7 +17,11 @@ M.buf = nil
 M.win = nil
 
 function M.is_valid()
-  return M.buf and M.win and vim.api.nvim_buf_is_valid(M.buf) and vim.api.nvim_buf_is_loaded(M.buf) and vim.api.nvim_win_is_valid(M.win)
+  return M.buf
+    and M.win
+    and vim.api.nvim_buf_is_valid(M.buf)
+    and vim.api.nvim_buf_is_loaded(M.buf)
+    and vim.api.nvim_win_is_valid(M.win)
 end
 
 function M.show()
@@ -27,27 +31,69 @@ function M.show()
   if M.is_valid() then
     return
   end
+
+  -- non-floating windows
+  local wins = vim.tbl_filter(function(w)
+    return vim.api.nvim_win_is_valid(w) and vim.api.nvim_win_get_config(w).relative == ""
+  end, vim.api.nvim_list_wins())
+
+  ---@type number[]
+  local margins = {}
+  for i, m in ipairs(config.options.window.margin) do
+    if m > 0 and m < 1 then
+      if i % 2 == 0 then
+        m = math.floor(vim.o.columns * m)
+      else
+        m = math.floor(vim.o.lines * m)
+      end
+    end
+    margins[i] = m
+  end
+
+-- margin limit
+ local border_val = config.options.window.border ~= "none" and 2 or 0
+ if margins[2] + margins[4] + border_val > vim.o.columns then
+   margins[2] = 0
+   margins[4] = 0
+ end
+
+ local bounds = Layout:get_bounds(config.options.layout)
+ local win_width = math.max(bounds.width.min, vim.o.columns
+      - margins[2]
+      - margins[4]
+      - border_val)
+
   local opts = {
     relative = "editor",
-    width = vim.o.columns - config.options.window.margin[2] - config.options.window.margin[4] - (vim.fn.has("nvim-0.6") == 0 and config.options.window.border ~= "none" and 2 or 0),
-    height = config.options.layout.height.min,
-    focusable = false,
+    width = win_width,
+    height = bounds.height.min,
+    focusable = true,
     anchor = "SW",
     border = config.options.window.border,
-    row = vim.o.lines - config.options.window.margin[3] - (vim.fn.has("nvim-0.6") == 0 and config.options.window.border ~= "none" and 2 or 0) - vim.o.cmdheight,
-    col = config.options.window.margin[2],
+    row = vim.o.lines
+      - margins[3]
+      - border_val
+      + ((vim.o.laststatus == 0 or vim.o.laststatus == 1 and #wins == 1) and 1 or 0)
+      - vim.o.cmdheight,
+    col = margins[4],
     style = "minimal",
-    noautocmd = true,
+    -- noautocmd = true,
+    zindex = config.options.window.zindex,
+    title = 'Testing title',
+    title_pos = 'center',
+    footer = 'Footer',
+    footer_pos = 'left'
   }
   if config.options.window.position == "top" then
     opts.anchor = "NW"
-    opts.row = config.options.window.margin[1]
+    opts.row = margins[1]
   end
   M.buf = vim.api.nvim_create_buf(false, true)
   M.win = vim.api.nvim_open_win(M.buf, false, opts)
   vim.api.nvim_buf_set_option(M.buf, "filetype", "WhichKey")
   vim.api.nvim_buf_set_option(M.buf, "buftype", "nofile")
   vim.api.nvim_buf_set_option(M.buf, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(M.buf, "modifiable", true)
 
   local winhl = "NormalFloat:WhichKeyFloat"
   if vim.fn.hlexists("FloatBorder") == 1 then
@@ -147,16 +193,6 @@ function M.back()
   if node then
     M.keys = node.prefix_i
   end
-end
-
----@param path Node[]
-function M.has_cmd(path)
-  for _, node in pairs(path) do
-    if node.mapping and node.mapping.cmd then
-      return true
-    end
-  end
-  return false
 end
 
 function M.execute(prefix_i, mode, buf)
@@ -259,6 +295,7 @@ function M.on_keys(opts)
     M.read_pending()
 
     local results = Keys.get_mappings(M.mode, M.keys, buf)
+    Util.log_key(results)
 
     --- Check for an exact match. Feedkeys with remap
     if results.mapping and not results.mapping.group and #results.mappings == 0 then
@@ -295,26 +332,40 @@ function M.on_keys(opts)
     local c = M.getchar()
 
     if c == Util.t("<esc>") then
+      Util.debug("esc pressed")
       M.hide()
       break
     elseif c == Util.t(config.options.popup_mappings.scroll_down) then
+      Util.debug("scroll down")
       M.scroll(false)
     elseif c == Util.t(config.options.popup_mappings.scroll_up) then
+      Util.debug("scroll up")
       M.scroll(true)
     elseif c == Util.t("<bs>") then
+      Util.debug("backspace")
       M.back()
     else
       M.keys = M.keys .. c
+      Util.debug("*** " .. M.keys)
+    end
+
+    for k, fn in pairs(config.options.popup_user_mappings) do
+      if c == Util.t(k) then
+        fn(M.keys:sub(1, -1 -#c), opts.mode)
+        M.hide()
+        return
+      end
     end
   end
 end
 
 ---@param text Text
-function M.render(text)
+function M.render(text, bounds)
+  local view = vim.api.nvim_win_call(M.win, vim.fn.winsaveview)
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, text.lines)
   local height = #text.lines
-  if height > config.options.layout.height.max then
-    height = config.options.layout.height.max
+  if height > bounds.height.max then
+    height = bounds.height.max
   end
   vim.api.nvim_win_set_height(M.win, height)
   if vim.api.nvim_buf_is_valid(M.buf) then
@@ -323,6 +374,9 @@ function M.render(text)
   for _, data in ipairs(text.hl) do
     highlight(M.buf, config.namespace, data.group, data.line, data.from, data.to)
   end
+  vim.api.nvim_win_call(M.win, function()
+    vim.fn.winrestview(view)
+  end)
 end
 
 return M

@@ -4,6 +4,8 @@ local Config = require("which-key.config")
 
 -- secret character that will be used to create <nop> mappings
 local secret = "Þ"
+-- magic description string prefix for nvim-native keybindings to display as groups: keys = { { "<leader>g",  desc = "WhichKeyGroup:git" } }
+local secret_group = "^WhichKeyGroup:"
 
 ---@class Keys
 local M = {}
@@ -136,7 +138,7 @@ function M.get_mappings(mode, prefix_i, buf)
     end
     if not skip then
       if value.group then
-        value.label = value.label or "+prefix"
+        value.label = value.label or value.desc or "+prefix"
         value.label = value.label:gsub("^%+", "")
         value.label = Config.options.icons.group .. value.label
       elseif not value.label then
@@ -502,18 +504,31 @@ function M.update_keymaps(mode, buf)
   end
 
   for _, keymap in pairs(keymaps) do
+    local is_group = false
     local skip = M.is_hook(keymap.lhs, keymap.rhs)
 
     if is_no_op(keymap) then
       skip = true
+      if keymap.desc then
+        keymap.group = true
+      else
+        skip = true
+      end
+    end
+
+  -- Magic identifier for keygroups in regular keybindings
+    if keymap.desc and keymap.desc:find(secret_group) then
+      keymap.desc = keymap.desc:gsub(secret_group, "")
+      is_group = true
+      skip = false
     end
 
     -- check if <leader> was remapped
     if not skip and Util.t(keymap.lhs) == Util.t("<leader>") and mode == "n" then
       if is_no_op(keymap) then
         skip = true
-      else
-        Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
+      -- else
+      --   Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
       end
     end
 
@@ -523,9 +538,17 @@ function M.update_keymaps(mode, buf)
         prefix = keymap.lhs,
         cmd = keymap.rhs,
         desc = keymap.desc,
+        group = keymap.group,
         keys = Util.parse_keys(keymap.lhs),
-        label = keymap.label or keymap.desc,
+        -- label = keymap.label or keymap.desc,
       }
+      if is_group then
+        mapping = vim.tbl_extend("error", mapping, {
+            group = true,
+            label = mapping.label or mapping.desc,
+            name = mapping.desc,
+          })
+      end
       -- don't include Plug keymaps
       if mapping.keys.notation[1]:lower() ~= "<plug>" then
         tree:add(mapping)

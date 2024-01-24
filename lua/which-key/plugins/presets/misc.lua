@@ -10,6 +10,7 @@ local misc = {
       v = "Split window vertically",
       w = "Switch windows",
       q = "Quit a window",
+      o = "Close all other windows",
       T = "Break out into a new tab",
       x = "Swap current with next",
       ["-"] = "Decrease height",
@@ -31,6 +32,9 @@ local misc = {
       O = "Open all folds under cursor",
       c = "Close fold under cursor",
       C = "Close all folds under cursor",
+      d = "Delete fold under cursor",
+      D = "Delete all folds under cursor",
+      E = "Delete all folds in file",
       a = "Toggle fold under cursor",
       A = "Toggle all folds under cursor",
       v = "Show cursor line",
@@ -41,6 +45,7 @@ local misc = {
       x = "Update folds",
       z = "Center this line",
       t = "Top this line",
+      ["<CR>"] = "Top this line, 1st non-blank col",
       b = "Bottom this line",
       g = "Add word to spell list",
       w = "Mark word as bad/misspelling",
@@ -48,6 +53,7 @@ local misc = {
       s = "Left this line",
       H = "Half screen to the left",
       L = "Half screen to the right",
+      i = "Toggle folding",
       ["="] = "Spelling suggestions",
     },
   },
@@ -78,6 +84,8 @@ local misc = {
     ["gn"] = "Search forwards and select",
     ["gN"] = "Search backwards and select",
     ["g%"] = "Cycle backwards through results",
+    ["gt"] = "Go to next tab page",
+    ["gT"] = "Go to previous tab page",
   },
 }
 
@@ -87,6 +95,7 @@ function M.setup(wk, config)
       wk.register(mappings, { mode = "n", prefix = "", preset = true })
     end
   end
+  wk.register({ ["zf"] = "Create fold from selection" }, { mode = "x", prefix = "", preset = true })
 end
 
 return M

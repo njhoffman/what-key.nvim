@@ -37,7 +37,23 @@ function Layout:max_width(key)
   return max
 end
 
-function Layout:trail()
+function Layout:get_bounds(_opts)
+  vim.dbglog('get bounds', _opts)
+  local opts = _opts and _opts or self.options.layout
+   return {
+    width = {
+      max = type(opts.width.max) == 'function' and opts.width.max() or opts.width.max,
+      min = type(opts.width.min) == 'function' and opts.width.min() or opts.width.min,
+    },
+    height = {
+      max = type(opts.height.max) == 'function' and opts.height.max() or opts.height.max,
+      min = type(opts.height.min) == 'function' and opts.height.min() or opts.height.min,
+    },
+  }
+end
+
+
+function Layout:trail(bounds)
   local prefix_i = self.results.prefix_i
   local buf_path = Keys.get_tree(self.results.mode, self.results.buf).tree:path(prefix_i)
   local path = Keys.get_tree(self.results.mode).tree:path(prefix_i)
@@ -72,7 +88,7 @@ function Layout:trail()
     ["<bs>"] = "go up one level",
     ["<esc>"] = "close",
   }
-  if #self.text.lines > self.options.layout.height.max then
+  if #self.text.lines > bounds.height.max then
     help[Config.options.popup_mappings.scroll_down] = "scroll down"
     help[Config.options.popup_mappings.scroll_up] = "scroll up"
   end
@@ -107,9 +123,8 @@ function Layout:trail()
 end
 
 function Layout:layout(win)
-  local window_width = vim.api.nvim_win_get_width(win)
-  local width = window_width
-  width = width - self.options.window.padding[2] - self.options.window.padding[4]
+  local win_width = vim.api.nvim_win_get_width(win)
+  local canvas_width = win_width - self.options.window.padding[2] - self.options.window.padding[4]
 
   local max_key_width = self:max_width("key")
   local max_label_width = self:max_width("label")
@@ -117,33 +132,39 @@ function Layout:layout(win)
 
   local intro_width = max_key_width + 2 + Text.len(self.options.icons.separator) + self.options.layout.spacing
   local max_width = max_label_width + intro_width + max_value_width
-  if max_width > width then
-    max_width = width
+  if max_width > canvas_width then
+    max_width = canvas_width
   end
 
   local column_width = max_width
+  local bounds = self:get_bounds()
 
-  if max_value_width == 0 then
-    if column_width > self.options.layout.width.max then
-      column_width = self.options.layout.width.max
+  if column_width > bounds.width.max then
+    column_width = bounds.width.max
+  end
+  if column_width < bounds.width.min then
+    column_width = bounds.width.min
+  end
+
+ if max_value_width == 0 then
+    if column_width > bounds.width.max then
+      column_width = bounds.width.max
     end
-    if column_width < self.options.layout.width.min then
-      column_width = self.options.layout.width.min
+    if column_width < bounds.width.min then
+      column_width = bounds.width.min 
     end
   else
-    max_value_width = math.min(max_value_width, math.floor((column_width - intro_width) / 2))
+    max_value_width = math.min(max_value_width or win_width, math.floor((column_width - intro_width) / 2))
   end
 
+  local columns = math.floor(win_width / column_width)
   max_label_width = column_width - (intro_width + max_value_width)
-
-  local columns = math.floor(width / column_width)
-  vim.dbglog("width", width, column_width, columns)
-
+  vim.dbglog(#self.items, columns)
   local height = math.ceil(#self.items / columns)
-  if height < self.options.layout.height.min then
-    height = self.options.layout.height.min
+  if height < bounds.height.min then
+    height = bounds.height.min
   end
-  -- if height > self.options.layout.height.max then height = self.options.layout.height.max end
+  -- if height > bounds.height.max then height = bounds.height.max end
 
   local col = 1
   local row = 1
@@ -214,8 +235,8 @@ function Layout:layout(win)
   for _ = 1, self.options.window.padding[3], 1 do
     self.text:nl()
   end
-  self:trail()
-  return self.text
+  self:trail(bounds)
+  return self.text, bounds
 end
 
 return Layout

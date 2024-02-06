@@ -1,5 +1,5 @@
-local Keys = require("which-key.keys")
-local Util = require("which-key.util")
+local Keys = require('which-key.keys')
+local Util = require('which-key.util')
 
 ---@class WhichKey
 local M = {}
@@ -21,7 +21,8 @@ end
 
 ---@param options? Options
 function M.setup(options)
-  require("which-key.config").setup(options)
+  require('which-key.config').setup(options)
+  vim.api.nvim_create_augroup('WhichKey', { clear = true })
   schedule_load()
 end
 
@@ -30,15 +31,18 @@ function M.execute(id)
   return func()
 end
 
-function M.show(keys, opts)
+function M.start(keys, opts)
   opts = opts or {}
-  if type(opts) == "string" then
+  if type(opts) == 'string' then
     opts = { mode = opts }
   end
 
-  keys = keys or ""
-
+  keys = keys or ''
+  -- format last key
   opts.mode = opts.mode or Util.get_mode()
+  opts._start_type = opts._start_type and opts._start_type or 'key:' .. keys .. ':' .. opts.mode
+  opts._start_time = vim.fn.reltime()
+
   local buf = vim.api.nvim_get_current_buf()
   -- make sure the trees exist for update
   Keys.get_tree(opts.mode)
@@ -46,19 +50,23 @@ function M.show(keys, opts)
   -- update only trees related to buf
   Keys.update(buf)
   -- trigger which key
-  require("which-key.view").open(keys, opts)
+  -- show, view.open, view.on_keys
+  -- (already open) char, on_keys
+  require('which-key.view').start(keys, opts)
 end
 
-function M.show_command(keys, mode)
-  keys = keys or ""
-  keys = (keys == '""' or keys == "''") and "" or keys
-  mode = (mode == '""' or mode == "''") and "" or mode
-  mode = mode or "n"
+function M.start_command(keys, mode)
+  keys = keys or ''
+  keys = (keys == '""' or keys == "''") and '' or keys
+  mode = (mode == '""' or mode == "''") and '' or mode
+  mode = mode or 'n'
   keys = Util.t(keys)
   if not Util.check_mode(mode) then
-    Util.error("Invalid mode passed to :WhichKey (Dont create any keymappings to trigger WhichKey. WhichKey does this automaytically)")
+    Util.error(
+      'Invalid mode passed to :WhichKey (Dont create any keymappings to trigger WhichKey. WhichKey does this automaytically)'
+    )
   else
-    M.show(keys, { mode = mode })
+    M.start(keys, { mode = mode, auto = true, _start_type = 'cmd:' .. keys .. ':' .. mode })
   end
 end
 
@@ -80,10 +88,10 @@ function M.load()
   if loaded then
     return
   end
-  require("which-key.plugins").setup()
-  require("which-key.colors").setup()
-  Keys.register({}, { prefix = "<leader>", mode = "n" })
-  Keys.register({}, { prefix = "<leader>", mode = "v" })
+  require('which-key.plugins').setup()
+  require('which-key.colors').setup()
+  Keys.register({}, { prefix = '<leader>', mode = 'n' })
+  Keys.register({}, { prefix = '<leader>', mode = 'v' })
   Keys.setup()
 
   for _, reg in pairs(queue) do
@@ -98,9 +106,9 @@ end
 
 function M.reset()
   -- local mappings = Keys.mappings
-  require("plenary.reload").reload_module("which-key")
+  require('plenary.reload').reload_module('which-key')
   -- require("which-key.Keys").mappings = mappings
-  require("which-key").setup()
+  require('which-key').setup()
 end
 
 return M

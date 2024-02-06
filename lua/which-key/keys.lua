@@ -1,11 +1,11 @@
-local Tree = require("which-key.tree")
-local Util = require("which-key.util")
-local Config = require("which-key.config")
+local Tree = require('which-key.tree')
+local Util = require('which-key.util')
+local Config = require('which-key.config')
 
 -- secret character that will be used to create <nop> mappings
-local secret = "Þ"
+local secret = 'Þ'
 -- magic description string prefix for nvim-native keybindings to display as groups: keys = { { "<leader>g",  desc = "WhichKeyGroup:git" } }
-local secret_group = "^WhichKeyGroup:"
+local secret_group = '^WhichKeyGroup:'
 
 ---@class Keys
 local M = {}
@@ -16,11 +16,10 @@ M.nowait = {}
 M.blacklist = {}
 
 local extra = false
-local backslash_esc = false
 
 function M.setup()
   extra = Config.options.plugins.presets.extra
-  local builtin_ops = require("which-key.plugins.presets").operators
+  local builtin_ops = require('which-key.plugins.presets').operators
   for op, _ in pairs(builtin_ops) do
     M.operators[op] = true
   end
@@ -39,8 +38,8 @@ function M.setup()
   for _, t in pairs(Config.options.triggers_nowait) do
     M.nowait[t] = true
   end
-  M.register(mappings, { mode = "n", preset = true })
-  M.register({ i = { name = "inside" }, a = { name = "around" } }, { mode = "v", preset = true })
+  M.register(mappings, { mode = 'n', preset = true })
+  M.register({ i = { name = 'inside' }, a = { name = 'around' } }, { mode = 'v', preset = true })
   for mode, blacklist in pairs(Config.options.triggers_blacklist) do
     for _, prefix_n in ipairs(blacklist) do
       M.blacklist[mode] = M.blacklist[mode] or {}
@@ -58,33 +57,56 @@ function M.get_operator(prefix_i)
   end
 end
 
+function M.update_mode(mode, op)
+  vim.api.nvim_set_var('which_key_mode', mode)
+  if op and tostring(op) ~= '' then
+    vim.api.nvim_set_var('which_key_op', op)
+    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
+  else
+    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)
+  end
+end
+
 function M.process_motions(ret, mode, prefix_i, buf)
-  local op_i, op_n = "", ""
-  if mode ~= "v" then
+  local op_i, op_n = '', ''
+
+  if mode ~= 'v' then
     op_i, op_n = M.get_operator(prefix_i)
   end
-  if (mode == "n" or mode == "v" and extra ~= true) and op_i then
-    local op_prefix_i = prefix_i:sub(#op_i + 1)
-    local op_count = op_prefix_i:match("^(%d+)")
-    if op_count == "0" then
-      op_count = nil
+  -- if prefix_i == 'g@' then
+  --   ret.mode = 'o'
+  --   -- vim.dbglog(ret.mode .. ':' .. mode, prefix_i, op_i)
+  -- else
+  --   -- vim.dbglog(ret.mode .. ':' .. mode, prefix_i, op_i)
+  -- end
+  if op_i then
+    M.update_mode('no', prefix_i)
+    if ret.mapping then
+      ret.mapping.mode = 'o'
     end
-    if Config.options.motions.count == false then
+  elseif mode ~= 'o' then
+    M.update_mode(mode, prefix_i)
+  end
+  if (mode == 'n' or mode == 'v' and extra ~= true) and op_i then
+    local op_prefix_i = prefix_i:sub(#op_i + 1)
+    local op_count = op_prefix_i:match('^(%d+)')
+    if op_count == '0' or Config.options.motions.count == false then
       op_count = nil
     end
     if op_count then
       op_prefix_i = op_prefix_i:sub(#op_count + 1)
     end
-    local op_results = M.get_mappings("o", op_prefix_i, buf)
+    ret.op_prefix_i = op_prefix_i
+    local op_results = M.get_mappings('o', op_prefix_i, buf)
 
     if not ret.mapping and op_results.mapping then
       ret.mapping = op_results.mapping
-      ret.mapping.prefix = op_n .. (op_count or "") .. ret.mapping.prefix
+      ret.mapping.prefix = op_n .. (op_count or '') .. ret.mapping.prefix
       ret.mapping.keys = Util.parse_keys(ret.mapping.prefix)
     end
 
     for _, mapping in pairs(op_results.mappings) do
-      mapping.prefix = op_n .. (op_count or "") .. mapping.prefix
+      mapping.prefix = op_n .. (op_count or '') .. mapping.prefix
       mapping.keys = Util.parse_keys(mapping.prefix)
       table.insert(ret.mappings, mapping)
     end
@@ -108,11 +130,11 @@ function M.get_mappings(mode, prefix_i, buf)
   local function add(node)
     if node then
       if node.mapping then
-        ret.mapping = vim.tbl_deep_extend("force", {}, ret.mapping or {}, node.mapping)
+        ret.mapping = vim.tbl_deep_extend('force', {}, ret.mapping or {}, node.mapping)
       end
       for k, child in pairs(node.children) do
-        if child.mapping and child.mapping.label ~= "which_key_ignore" and child.mapping.desc ~= "which_key_ignore" then
-          ret.mappings[k] = vim.tbl_deep_extend("force", {}, ret.mappings[k] or {}, child.mapping)
+        if child.mapping and child.mapping.label ~= 'which_key_ignore' and child.mapping.desc ~= 'which_key_ignore' then
+          ret.mappings[k] = vim.tbl_deep_extend('force', {}, ret.mappings[k] or {}, child.mapping)
         end
       end
     end
@@ -133,18 +155,18 @@ function M.get_mappings(mode, prefix_i, buf)
       value.key = Config.options.key_labels[value.key]
     end
     local skip = not value.label and Config.options.ignore_missing == true
-    if Util.t(value.key) == Util.t("<esc>") then
+    if Util.t(value.key) == Util.t('<esc>') then
       skip = true
     end
     if not skip then
       if value.group then
-        value.label = value.label or value.desc or "+prefix"
-        value.label = value.label:gsub("^%+", "")
+        value.label = value.label or value.desc or '+prefix'
+        value.label = value.label:gsub('^%+', '')
         value.label = Config.options.icons.group .. value.label
       elseif not value.label then
-        value.label = value.desc or value.cmd or ""
+        value.label = value.desc or value.cmd or ''
         for _, v in ipairs(Config.options.hidden) do
-          value.label = value.label:gsub(v, "")
+          value.label = value.label:gsub(v, '')
         end
       end
       if value.value then
@@ -153,7 +175,7 @@ function M.get_mappings(mode, prefix_i, buf)
       -- remove duplicated keymap
       local exists = false
       for k, v in pairs(tmp) do
-        if type(v) == "table" and v.key == value.key then
+        if type(v) == 'table' and v.key == value.key then
           tmp[k] = value
           exists = true
           break
@@ -171,10 +193,10 @@ function M.get_mappings(mode, prefix_i, buf)
       return a.order < b.order
     end
     if a.group == b.group then
-      local ak = (a.key or ""):lower()
-      local bk = (b.key or ""):lower()
-      local aw = ak:match("[a-z]") and 1 or 0
-      local bw = bk:match("[a-z]") and 1 or 0
+      local ak = (a.key or ''):lower()
+      local bk = (b.key or ''):lower()
+      local aw = ak:match('[a-z]') and 1 or 0
+      local bw = bk:match('[a-z]') and 1 or 0
       if aw == bw then
         return ak < bk
       end
@@ -211,7 +233,7 @@ end
 function M.register(mappings, opts)
   opts = opts or {}
 
-  mappings = require("which-key.mappings").parse(mappings, opts)
+  mappings = require('which-key.mappings').parse(mappings, opts)
 
   -- always create the root node for the mode, even if there's no mappings,
   -- to ensure we have at least a trigger hooked for non documented keymaps
@@ -232,7 +254,7 @@ end
 M.hooked = {}
 
 function M.hook_id(prefix_n, mode, buf)
-  return mode .. (buf or "") .. Util.t(prefix_n)
+  return mode .. (buf or '') .. Util.t(prefix_n)
 end
 
 function M.is_hooked(prefix_n, mode, buf)
@@ -261,37 +283,37 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
     return
   end
   -- don't hook to j or k in INSERT mode
-  if mode == "i" and (prefix_n == "j" or prefix_n == "k") then
+  if mode == 'i' and (prefix_n == 'j' or prefix_n == 'k') then
     return
   end
   -- never hook q
-  if mode == "n" and prefix_n == "q" then
+  if mode == 'n' and prefix_n == 'q' then
     return
   end
   -- never hook into select mode
-  if mode == "s" then
+  if mode == 's' then
     return
   end
   -- never hook into operator pending mode
   -- this is handled differently
-  if mode == "o" then
+  if mode == 'o' then
     return
   end
-  if Util.t(prefix_n) == Util.t("<esc>") then
+  if Util.t(prefix_n) == Util.t('<esc>') then
     return
   end
   -- never hook into operators in visual mode
-  if (mode == "v" or mode == "x") and M.operators[prefix_n] then
+  if (mode == 'v' or mode == 'x') and M.operators[prefix_n] then
     return
   end
 
   -- Check if we need to create the hook
-  if type(Config.options.triggers) == "string" and Config.options.triggers ~= "auto" then
+  if type(Config.options.triggers) == 'string' and Config.options.triggers ~= 'auto' then
     if Util.t(prefix_n) ~= Util.t(Config.options.triggers) then
       return
     end
   end
-  if type(Config.options.triggers) == "table" then
+  if type(Config.options.triggers) == 'table' then
     local ok = false
     for _, trigger in pairs(Config.options.triggers) do
       if Util.t(trigger) == Util.t(prefix_n) then
@@ -309,17 +331,17 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   local id_global = M.hook_id(prefix_n, mode)
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
-    local cmd = [[<cmd>lua require("which-key").show(%q, {mode = %q, auto = true})<cr>]]
+    local cmd = [[<cmd>lua require("which-key").start(%q, {mode = %q, auto = true})<cr>]]
     cmd = string.format(cmd, Util.t(prefix_n), mode)
     -- map group triggers and nops
     -- nops are needed, so that WhichKey always respects timeoutlen
 
-    local mapmode = mode == "v" and "x" or mode
+    local mapmode = mode == 'v' and 'x' or mode
     if secret_only ~= true then
       M.map(mapmode, prefix_n, cmd, buf, opts)
     end
     if not M.nowait[prefix_n] then
-      M.map(mapmode, prefix_n .. secret, "<nop>", buf, opts)
+      M.map(mapmode, prefix_n .. secret, '<nop>', buf, opts)
     end
 
     M.hooked[id] = true
@@ -347,7 +369,7 @@ function M.add_hooks(mode, buf, node, secret_only)
   if not node.mapping then
     node.mapping = { prefix = node.prefix_n, group = true, keys = Util.parse_keys(node.prefix_n) }
   end
-  if node.prefix_n ~= "" and node.mapping.group == true and not node.mapping.cmd then
+  if node.prefix_n ~= '' and node.mapping.group == true and not node.mapping.cmd then
     -- first non-cmd level, so create hook and make all decendents secret only
     M.hook_add(node.prefix_n, mode, buf, secret_only)
     secret_only = true
@@ -370,8 +392,13 @@ function M.dump()
           count = count + 1
         end
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
-        if node.prefix_i ~= "" and count > 0 and not auto_prefix then
-          local msg = ("conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q"):format(tree.mode, count, node.mapping.prefix, node.mapping.cmd or " ")
+        if node.prefix_i ~= '' and count > 0 and not auto_prefix then
+          local msg = ('conflicting keymap exists for mode %q %2s lhs: %q, rhs: %q'):format(
+            tree.mode,
+            count,
+            node.mapping.prefix,
+            node.mapping.cmd or ' '
+          )
           table.insert(conflicts, msg)
           -- conflicts[tree.mode] = conflicts[tree.mode] or {}
           -- conflicts[tree.mode][node.mapping.prefix] = node.children
@@ -385,7 +412,7 @@ function M.dump()
             todo[tree.mode][node.mapping.prefix] = nil
           elseif not ok[node.mapping.prefix] then
             todo[tree.mode] = todo[tree.mode] or {}
-            todo[tree.mode][node.mapping.prefix] = node.mapping.cmd or ""
+            todo[tree.mode][node.mapping.prefix] = node.mapping.cmd or ''
           end
         end
       end
@@ -394,13 +421,13 @@ function M.dump()
 
   local dupes = {}
   for _, dup in pairs(M.duplicates) do
-    local msg = ""
+    local msg = ''
     if dup.buf == dup.other.buffer then
-      msg = "duplicate keymap"
+      msg = 'duplicate keymap'
     else
-      msg = "buffer-local keymap overriding global"
+      msg = 'buffer-local keymap overriding global'
     end
-    msg = (msg .. " for mode **%q**, buf: %d, lhs: **%q**"):format(dup.mode, dup.buf or 0, dup.prefix)
+    msg = (msg .. ' for mode **%q**, buf: %d, lhs: **%q**'):format(dup.mode, dup.buf or 0, dup.prefix)
     table.insert(dupes, msg)
     -- vim.fn["health#report_info"](("old rhs: `%s`"):format(dup.other.rhs or ""))
     -- vim.fn["health#report_info"](("new rhs: `%s`"):format(dup.cmd or ""))
@@ -413,18 +440,18 @@ function M.dump_out()
   local lines = {}
 
   for _, conflict in ipairs(conflicts) do
-    table.insert(lines, "conf: " .. conflict)
+    table.insert(lines, 'conf: ' .. conflict)
   end
 
   for mode, keys in pairs(ok) do
     for key, def in pairs(keys) do
-      table.insert(lines, "ok:   (" .. mode .. ') "' .. key .. '" ' .. def)
+      table.insert(lines, 'ok:   (' .. mode .. ') "' .. key .. '" ' .. def)
     end
   end
 
   for mode, keys in pairs(todo) do
     for key, def in pairs(keys) do
-      table.insert(lines, "todo: (" .. mode .. ") " .. '"' .. key .. '" ' .. def)
+      table.insert(lines, 'todo: (' .. mode .. ') ' .. '"' .. key .. '" ' .. def)
     end
   end
 
@@ -432,7 +459,7 @@ function M.dump_out()
 end
 
 function M.check_health()
-  vim.health.report_start("WhichKey: checking conflicting keymaps")
+  vim.health.report_start('WhichKey: checking conflicting keymaps')
   for _, tree in pairs(M.mappings) do
     M.update_keymaps(tree.mode, tree.buf)
     tree.tree:walk( ---@param node Node
@@ -443,41 +470,41 @@ function M.check_health()
         end
 
         local auto_prefix = not node.mapping or (node.mapping.group == true and not node.mapping.cmd)
-        if node.prefix_i ~= "" and count > 0 and not auto_prefix then
-          local msg = ("conflicting keymap exists for mode **%q**, lhs: **%q**"):format(tree.mode, node.mapping.prefix)
-          vim.fn["health#report_warn"](msg)
-          local cmd = node.mapping.cmd or " "
-          vim.health.report_info(("rhs: `%s`"):format(cmd))
+        if node.prefix_i ~= '' and count > 0 and not auto_prefix then
+          local msg = ('conflicting keymap exists for mode **%q**, lhs: **%q**'):format(tree.mode, node.mapping.prefix)
+          vim.fn['health#report_warn'](msg)
+          local cmd = node.mapping.cmd or ' '
+          vim.health.report_info(('rhs: `%s`'):format(cmd))
         end
       end
     )
   end
   for _, dup in pairs(M.duplicates) do
-    local msg = ""
+    local msg = ''
     if dup.buf == dup.other.buffer then
-      msg = "duplicate keymap"
+      msg = 'duplicate keymap'
     else
-      msg = "buffer-local keymap overriding global"
+      msg = 'buffer-local keymap overriding global'
     end
-    msg = (msg .. " for mode **%q**, buf: %d, lhs: **%q**"):format(dup.mode, dup.buf or 0, dup.prefix)
+    msg = (msg .. ' for mode **%q**, buf: %d, lhs: **%q**'):format(dup.mode, dup.buf or 0, dup.prefix)
     if dup.buf == dup.other.buffer then
       vim.health.report_error(msg)
     else
       vim.health.report_warn(msg)
     end
-    vim.health.report_info(("old rhs: `%s`"):format(dup.other.rhs or ""))
-    vim.health.report_info(("new rhs: `%s`"):format(dup.cmd or ""))
+    vim.health.report_info(('old rhs: `%s`'):format(dup.other.rhs or ''))
+    vim.health.report_info(('new rhs: `%s`'):format(dup.cmd or ''))
   end
 end
 
 ---@param mode string
 ---@param buf? buffer
 function M.get_tree(mode, buf)
-  if mode == "s" or mode == "x" then
-    mode = "v"
+  if mode == 's' or mode == 'x' then
+    mode = 'v'
   end
   Util.check_mode(mode, buf)
-  local idx = mode .. (buf or "")
+  local idx = mode .. (buf or '')
   if not M.mappings[idx] then
     M.mappings[idx] = { mode = mode, buf = buf, tree = Tree:new() }
   end
@@ -488,7 +515,7 @@ function M.is_hook(prefix, cmd)
   -- skip mappings with our secret nop command
   local has_secret = prefix:find(secret)
   -- skip auto which-key mappings
-  local has_wk = cmd and cmd:find("which%-key") and cmd:find("auto") or false
+  local has_wk = cmd and cmd:find('which%-key') and cmd:find('auto') or false
   return has_wk or has_secret
 end
 
@@ -500,7 +527,7 @@ function M.update_keymaps(mode, buf)
   local tree = M.get_tree(mode, buf).tree
 
   local function is_no_op(keymap)
-    return not keymap.callback and Util.t(keymap.rhs) == ""
+    return not keymap.callback and Util.t(keymap.rhs) == ''
   end
 
   for _, keymap in pairs(keymaps) do
@@ -510,25 +537,31 @@ function M.update_keymaps(mode, buf)
     if is_no_op(keymap) then
       skip = true
       if keymap.desc then
-        keymap.group = true
+        is_group = true
       else
         skip = true
       end
     end
 
-  -- Magic identifier for keygroups in regular keybindings
+    -- Magic identifier for keygroups in regular keybindings
     if keymap.desc and keymap.desc:find(secret_group) then
-      keymap.desc = keymap.desc:gsub(secret_group, "")
+      keymap.desc = keymap.desc:gsub(secret_group, '')
       is_group = true
       skip = false
     end
 
+    -- check for ignored items in configuration
+    for _, v in ipairs(Config.options.ignored) do
+      if keymap.lhs == v or keymap.lhs:find(v) then
+        skip = true
+        break
+      end
+    end
+
     -- check if <leader> was remapped
-    if not skip and Util.t(keymap.lhs) == Util.t("<leader>") and mode == "n" then
+    if not skip and Util.t(keymap.lhs) == Util.t('<leader>') and mode == 'n' then
       if is_no_op(keymap) then
         skip = true
-      -- else
-      --   Util.warn(string.format("Your <leader> key for %q mode in buf %d is currently mapped to %q. WhichKey automatically creates triggers, so please remove the mapping", mode, buf or 0, keymap.rhs))
       end
     end
 
@@ -542,15 +575,16 @@ function M.update_keymaps(mode, buf)
         keys = Util.parse_keys(keymap.lhs),
         -- label = keymap.label or keymap.desc,
       }
+      -- vim.dbglog('keymap', keymap)
       if is_group then
-        mapping = vim.tbl_extend("error", mapping, {
-            group = true,
-            label = mapping.label or mapping.desc,
-            name = mapping.desc,
-          })
+        mapping = vim.tbl_extend('error', mapping, {
+          group = true,
+          label = mapping.label or mapping.desc,
+          name = mapping.desc,
+        })
       end
       -- don't include Plug keymaps
-      if mapping.keys.notation[1]:lower() ~= "<plug>" then
+      if mapping.keys.notation[1]:lower() ~= '<plug>' then
         tree:add(mapping)
       end
     end

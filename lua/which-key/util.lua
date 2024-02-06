@@ -6,16 +6,32 @@ local strsub = string.sub
 local cache = {}
 ---@type table<string,string>
 local tcache = {}
-local cache_leaders = ""
+local cache_leaders = ''
+
+M.debug = require('which-key.util.log').debug
+M.info = require('which-key.util.log').info
+M.warn = require('which-key.util.log').warn
+M.error = require('which-key.util.log').error
+M.log_key = require('which-key.util.log').log_key
 
 function M.check_cache()
   ---@type string
-  local leaders = (vim.g.mapleader or "") .. ":" .. (vim.g.maplocalleader or "")
+  local leaders = (vim.g.mapleader or '') .. ':' .. (vim.g.maplocalleader or '')
   if leaders ~= cache_leaders then
     cache = {}
     tcache = {}
     cache_leaders = leaders
   end
+end
+
+function M.without(tbl, key)
+  local new = {}
+  for k, v in pairs(tbl) do
+    if k ~= key then
+      new[k] = v
+    end
+  end
+  return new
 end
 
 function M.count(tab)
@@ -28,8 +44,8 @@ end
 
 function M.get_mode()
   local mode = vim.api.nvim_get_mode().mode
-  mode = mode:gsub(M.t("<C-V>"), "v")
-  mode = mode:gsub(M.t("<C-S>"), "s")
+  mode = mode:gsub(M.t('<C-V>'), 'v')
+  mode = mode:gsub(M.t('<C-S>'), 's')
   return mode:lower()
 end
 
@@ -41,7 +57,7 @@ function M.t(str)
   M.check_cache()
   if not tcache[str] then
     -- https://github.com/neovim/neovim/issues/17369
-    tcache[str] = vim.api.nvim_replace_termcodes(str, false, true, true):gsub("\128\254X", "\128")
+    tcache[str] = vim.api.nvim_replace_termcodes(str, false, true, true):gsub('\128\254X', '\128')
   end
   return tcache[str]
 end
@@ -69,9 +85,9 @@ local utf8len_tab = {
 -- stylua: ignore end
 
 local Tokens = {
-  ["<"] = strbyte("<"),
-  [">"] = strbyte(">"),
-  ["-"] = strbyte("-"),
+  ['<'] = strbyte('<'),
+  ['>'] = strbyte('>'),
+  ['-'] = strbyte('-'),
 }
 ---@return KeyCodes
 function M.parse_keys(keystr)
@@ -90,7 +106,7 @@ function M.parse_keys(keystr)
   end
 
   local keystr_orig = keystr
-  keystr = keystr:gsub("<lt>", "<")
+  keystr = keystr:gsub('<lt>', '<')
   local notation = {}
   ---@alias ParseState
   --- | "Character"
@@ -99,30 +115,30 @@ function M.parse_keys(keystr)
   local start = 1
   local i = start
   ---@type ParseState
-  local state = "Character"
+  local state = 'Character'
   while i <= #keystr do
     local c = strbyte(keystr, i, i)
 
-    if state == "Character" then
+    if state == 'Character' then
       start = i
       -- Only interpret special tokens if neovim also replaces it
-      state = c == Tokens["<"] and internal[#notation + 1] ~= "<" and "Special" or state
-    elseif state == "Special" then
-      state = (c == Tokens["-"] and "SpecialNoClose") or (c == Tokens[">"] and "Character") or state
+      state = c == Tokens['<'] and internal[#notation + 1] ~= '<' and 'Special' or state
+    elseif state == 'Special' then
+      state = (c == Tokens['-'] and 'SpecialNoClose') or (c == Tokens['>'] and 'Character') or state
     else
-      state = "Special"
+      state = 'Special'
     end
 
     i = i + utf8len_tab[c + 1]
-    if state == "Character" then
+    if state == 'Character' then
       local k = strsub(keystr, start, i - 1)
-      notation[#notation + 1] = k == " " and "<space>" or k
+      notation[#notation + 1] = k == ' ' and '<space>' or k
     end
   end
 
   local mapleader = vim.g.mapleader
   mapleader = mapleader and M.t(mapleader)
-  notation[1] = internal[1] == mapleader and "<leader>" or notation[1]
+  notation[1] = internal[1] == mapleader and '<leader>' or notation[1]
 
   if #notation ~= #internal then
     error(vim.inspect({ keystr = keystr, internal = internal, notation = notation }))
@@ -146,17 +162,17 @@ function M.parse_internal(keystr)
   --- | "Character"
   --- | "Special"
   ---@type ParseInternalState
-  local state = "Character"
+  local state = 'Character'
   local start = 1
   local i = 1
   while i <= #keystr do
     local c = strbyte(keystr, i, i)
 
-    if state == "Character" then
-      state = c == 128 and "Special" or state
+    if state == 'Character' then
+      state = c == 128 and 'Special' or state
       i = i + utf8len_tab[c + 1]
 
-      if state == "Character" then
+      if state == 'Character' then
         keys[#keys + 1] = strsub(keystr, start, i - 1)
         start = i
       end
@@ -171,51 +187,27 @@ function M.parse_internal(keystr)
       end
       -- The last byte of this sequence should be between 0x02 and 0x7f,
       -- switch to Character state to collect.
-      state = "Character"
+      state = 'Character'
     end
   end
   return keys
 end
 
-function M.log_key(results)
-  if results.mapping then
-    local map = results.mapping
-    M.debug('wk: '
-      .. (map.group == true and '+' or '')
-      .. (type(map.id) == 'string' and map.id  or '_')
-      .. (type(map.mode) == 'string' and (' (' .. map.mode .. ') ') or ' ')
-      .. map.keys.keys
-      .. ' ➜ '  
-      .. (type(map.name) == 'string' and map.name or type(map.label) == 'string' and map.label or '')
-      .. ' ['
-      .. #results.mappings
-      .. ' maps]'
-      )
-  end
-end
-
-function M.debug(...)
-  vim.dbglog(...)
-end
-
-function M.info(...)
-  vim.dbglog(...)
-end
-
-function M.warn(msg)
-  vim.notify(msg, vim.log.levels.WARN, { title = "WhichKey" })
-end
-
-function M.error(msg)
-  vim.notify(msg, vim.log.levels.ERROR, { title = "WhichKey" })
-end
-
 function M.check_mode(mode, buf)
-  if not ("nvsxoiRct"):find(mode) then
-    M.error(string.format("Invalid mode %q for buf %d", mode, buf or 0))
+  if not ('nvsxoiRct'):find(mode) then
+    M.error(string.format('Invalid mode %q for buf %d', mode, buf or 0))
     return false
   end
   return true
+end
+
+M.ctrlkey = function(c)
+  local byte = string.byte(c)
+  if byte >= 1 and byte <= 31 then
+    return '<C-' .. string.char(byte + 64) .. '>'
+  else
+    return c
+  end
 end
 
 return M

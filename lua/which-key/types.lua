@@ -17,6 +17,7 @@
 ---@field callback fun()|nil
 ---@field id string terminal keycodes for lhs
 ---@field desc string
+---@field label string
 
 ---@class KeyCodes
 ---@field keys string

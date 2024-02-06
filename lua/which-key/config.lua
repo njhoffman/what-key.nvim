@@ -47,6 +47,7 @@ local defaults = {
     scroll_down = "<c-d>", -- binding to scroll down inside the popup
     scroll_up = "<c-u>", -- binding to scroll up inside the popup
   },
+  popup_user_mappings = {},
   window = {
     border = "none", -- none, single, double, shadow
     position = "bottom", -- bottom, top
@@ -62,6 +63,7 @@ local defaults = {
   },
   ignore_missing = false, -- enable this to hide mappings for which you didn't specify a label
   hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "^:", "^ ", "^call ", "^lua " }, -- hide mapping boilerplate
+  ignored = {}, -- list of patterns to ignore complete key
   show_help = true, -- show a help message in the command line for using WhichKey
   show_keys = true, -- show the currently pressed key and its label as a message in the command line
   triggers = "auto", -- automatically setup triggers
@@ -91,7 +93,15 @@ local defaults = {
     buftypes = {},
     filetypes = {},
   },
-}
+  mode_highlights = {}, -- separator, group, desc float value, border, mode
+  user_hooks = {
+    list_pre = nil,
+    list_post = nil,
+    breadcrumbs = nil,
+  },           
+  vimade_fade = false,
+  debug = false
+}                         
 
 ---@type Options
 M.options = {}

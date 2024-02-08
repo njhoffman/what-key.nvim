@@ -1,114 +1,9 @@
+local Util = require('which-key.util')
 local Config = require('which-key.config')
 local Text = require('which-key.text')
-local Keys = require('which-key.keys')
-local Util = require('which-key.util')
 
----@class Layout
----@field mapping Mapping
----@field items VisualMapping[]
----@field options Options
----@field text Text
----@field breadcrumbs Text
----@field title Text
----@field results MappingGroup
-local Layout = {}
-Layout.__index = Layout
-
----@param mappings MappingGroup
----@param options? Options
-function Layout:new(mappings, options)
-  options = options or Config.options
-  local this = {
-    results = mappings,
-    mapping = mappings.mapping,
-    items = mappings.mappings,
-    options = options,
-    text = Text:new(),
-    breadcrumbs = Text:new(),
-    title = Text:new(),
-  }
-  setmetatable(this, self)
-  return this
-end
-
-function Layout:max_width(key)
-  local max = 0
-  for _, item in pairs(self.items) do
-    if item[key] and Text.len(item[key]) > max then
-      max = Text.len(item[key])
-    end
-  end
-  return max
-end
-
-function Layout:get_bounds(_opts)
-  local opts = _opts and _opts or self.options.layout
-  return {
-    width = {
-      max = type(opts.width.max) == 'function' and opts.width.max() or opts.width.max,
-      min = type(opts.width.min) == 'function' and opts.width.min() or opts.width.min,
-    },
-    height = {
-      max = type(opts.height.max) == 'function' and opts.height.max() or opts.height.max,
-      min = type(opts.height.min) == 'function' and opts.height.min() or opts.height.min,
-    },
-  }
-end
-
-function Layout:make_title()
-  return self.title
-end
-
-function Layout:make_breadcrumbs()
-  if not self.results.mapping then
-    Util.debug('No mapping found for breadcrumbs: ' .. vim.inspect(self.results))
-    return
-  end
-  local prefix_i = self.results.prefix_i
-  local mode = self.results.mode_long or self.results.mapping.mode or self.results.mode
-  local buf_path = Keys.get_tree(mode, self.results.buf).tree:path(prefix_i)
-  local path = Keys.get_tree(mode).tree:path(prefix_i)
-  local len = #self.results.mapping.keys.notation
-  local cmd_line = { { '(' .. mode .. ') ', 'WhichKeyMode' } }
-  for i = 1, len, 1 do
-    local node = buf_path[i]
-    if not (node and node.mapping and node.mapping.label) then
-      node = path[i]
-    end
-    local step = self.mapping.keys.notation[i]
-    if node and node.mapping and node.mapping.label then
-      step = self.options.icons.group .. node.mapping.label
-    end
-
-    if Config.options.key_labels[step] then
-      step = Config.options.key_labels[step]
-    end
-    if Config.options.show_keys then
-      table.insert(cmd_line, { step, 'WhichKeyGroup' })
-      if i ~= #self.mapping.keys.notation then
-        table.insert(cmd_line, { ' ' .. self.options.icons.breadcrumb .. ' ', 'WhichKeySeparator' })
-      end
-    end
-  end
-
-  if vim.o.cmdheight > 0 then
-    vim.api.nvim_echo(cmd_line, false, {})
-    vim.cmd([[redraw]])
-  end
-
-  local col = 1
-  for _, text in ipairs(cmd_line) do
-    self.breadcrumbs:set(1, col, text[1], text[2] and text[2]:gsub('WhichKey', '') or nil)
-    col = col + vim.fn.strwidth(text[1])
-  end
-
-  if type(Config.options.user_hooks.breadcrumbs) == 'function' then
-    self.breadcrumbs = Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
-  end
-  return self.breadcrumbs
-end
-
-function Layout:make_list(win)
+-- function Layout:make_list(win)
+local render_list = function(self, win)
   local win_width = vim.api.nvim_win_get_width(win)
   local canvas_width = win_width - self.options.window.padding[2] - self.options.window.padding[4]
 
@@ -240,4 +135,4 @@ function Layout:make_list(win)
   return self.text
 end
 
-return Layout
+return render_list

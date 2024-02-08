@@ -27,7 +27,6 @@ local state = {
 ---@class View
 local M = {}
 
-M.auto = false
 M.buf = nil
 M.win = nil
 

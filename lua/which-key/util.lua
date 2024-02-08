@@ -1,3 +1,5 @@
+local Logger = require('which-key.logger')
+
 ---@class Util
 local M = {}
 local strbyte = string.byte
@@ -7,7 +9,7 @@ local cache = {}
 ---@type table<string,string>
 local tcache = {}
 local cache_leaders = ''
-local Logger = require('which-key.logger')
+
 
 function M.check_cache()
   ---@type string

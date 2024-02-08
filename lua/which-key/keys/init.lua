@@ -1,7 +1,6 @@
 local Tree = require('which-key.tree')
 local Util = require('which-key.util')
 local Config = require('which-key.config')
-local Logger = require('which-key.logger')
 
 -- secret character that will be used to create <nop> mappings
 local secret = 'Þ'

@@ -1,11 +1,13 @@
 local Keys = require('which-key.keys')
 local Util = require('which-key.util')
+local Logger = require('which-key.logger')
 
 ---@class WhichKey
 local M = {}
 
 local loaded = false -- once we loaded everything
 local scheduled = false
+local load_start = nil
 
 local function schedule_load()
   if scheduled then
@@ -21,14 +23,10 @@ end
 
 ---@param options? Options
 function M.setup(options)
+  load_start = vim.fn.reltime()
   require('which-key.config').setup(options)
   vim.api.nvim_create_augroup('WhichKey', { clear = true })
   schedule_load()
-end
-
-function M.execute(id)
-  local func = Keys.functions[id]
-  return func()
 end
 
 function M.start(keys, opts)
@@ -48,7 +46,8 @@ function M.start(keys, opts)
   Keys.get_tree(opts.mode)
   Keys.get_tree(opts.mode, buf)
   -- update only trees related to buf
-  Keys.update(buf)
+  -- Keys.update(buf)
+  Keys.update()
   -- trigger which key
   -- show, view.open, view.on_keys
   -- (already open) char, on_keys
@@ -62,7 +61,7 @@ function M.start_command(keys, mode)
   mode = mode or 'n'
   keys = Util.t(keys)
   if not Util.check_mode(mode) then
-    Util.error(
+    Logger.error(
       'Invalid mode passed to :WhichKey (Dont create any keymappings to trigger WhichKey. WhichKey does this automaytically)'
     )
   else
@@ -89,9 +88,8 @@ function M.load()
     return
   end
   require('which-key.plugins').setup()
+  require('which-key.presets').setup()
   require('which-key.colors').setup()
-  Keys.register({}, { prefix = '<leader>', mode = 'n' })
-  Keys.register({}, { prefix = '<leader>', mode = 'v' })
   Keys.setup()
 
   for _, reg in pairs(queue) do
@@ -99,7 +97,23 @@ function M.load()
     opts.update = false
     Keys.register(reg[1], opts)
   end
+
   Keys.update()
+  -- TODO: why not work - "n @!     v " or "n @!     c "
+  -- local buf = vim.api.nvim_get_current_buf()
+  -- local mode = Util.get_mode()
+  -- Keys.get_tree(mode)
+  -- Keys.get_tree(mode, buf)
+  -- Keys.update(buf)
+
+  local counts = Keys.dump().counts
+  Logger.log_startup(load_start, counts, {
+    hooked = Keys.hooked,
+    auto = Keys.hooked_auto,
+    nop = Keys.hooked_nop,
+    fast = Keys.hooked_fast,
+  })
+
   queue = {}
   loaded = true
 end

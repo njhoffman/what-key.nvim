@@ -1,4 +1,4 @@
-local Util = require("which-key.util")
+local Util = require('which-key.util')
 
 local M = {}
 
@@ -13,40 +13,40 @@ local function lookup(...)
 end
 
 local mapargs = {
-  "noremap",
-  "desc",
-  "expr",
-  "silent",
-  "nowait",
-  "script",
-  "unique",
-  "callback",
-  "replace_keycodes", -- TODO: add config setting for default value
+  'noremap',
+  'desc',
+  'expr',
+  'silent',
+  'nowait',
+  'script',
+  'unique',
+  'callback',
+  'replace_keycodes', -- TODO: add config setting for default value
 }
 local wkargs = {
-  "prefix",
-  "mode",
-  "plugin",
-  "buffer",
-  "remap",
-  "cmd",
-  "name",
-  "group",
-  "preset",
-  "cond",
+  'prefix',
+  'mode',
+  'plugin',
+  'buffer',
+  'remap',
+  'cmd',
+  'name',
+  'group',
+  'preset',
+  'cond',
 }
 local transargs = lookup({
-  "noremap",
-  "expr",
-  "silent",
-  "nowait",
-  "script",
-  "unique",
-  "prefix",
-  "mode",
-  "buffer",
-  "preset",
-  "replace_keycodes",
+  'noremap',
+  'expr',
+  'silent',
+  'nowait',
+  'script',
+  'unique',
+  'prefix',
+  'mode',
+  'buffer',
+  'preset',
+  'replace_keycodes',
 })
 local args = lookup(mapargs, wkargs)
 
@@ -64,8 +64,8 @@ function M._process(value, opts)
   local list = {}
   local children = {}
   for k, v in pairs(value) do
-    if type(k) == "number" then
-      if type(v) == "table" then
+    if type(k) == 'number' then
+      if type(v) == 'table' then
         -- nested child, without key
         table.insert(children, v)
       else
@@ -84,7 +84,7 @@ function M._process(value, opts)
 end
 
 function M._parse(value, mappings, opts)
-  if type(value) ~= "table" then
+  if type(value) ~= 'table' then
     value = { value }
   end
 
@@ -95,7 +95,7 @@ function M._parse(value, mappings, opts)
   end
   if opts.name then
     -- remove + from group names
-    opts.name = opts.name and opts.name:gsub("^%+", "")
+    opts.name = opts.name and opts.name:gsub('^%+', '')
     opts.group = true
   end
 
@@ -111,7 +111,7 @@ function M._parse(value, mappings, opts)
   end
 
   if opts.cond ~= nil then
-    if type(opts.cond) == "function" then
+    if type(opts.cond) == 'function' then
       if not opts.cond() then
         return
       end
@@ -123,39 +123,39 @@ function M._parse(value, mappings, opts)
   -- process any array child mappings
   for k, v in pairs(children) do
     local o = M.child_opts(opts)
-    if type(k) == "string" then
-      o.prefix = (o.prefix or "") .. k
+    if type(k) == 'string' then
+      o.prefix = (o.prefix or '') .. k
     end
     M._try_parse(v, mappings, o)
   end
 
   -- { desc }
   if #list == 1 then
-    if type(list[1]) ~= "string" then
-      error("Invalid mapping for " .. vim.inspect({ value = value, opts = opts }))
+    if type(list[1]) ~= 'string' then
+      error('Invalid mapping for ' .. vim.inspect({ value = value, opts = opts }))
     end
     opts.desc = list[1]
   -- { cmd, desc }
   elseif #list == 2 then
     -- desc
-    assert(type(list[2]) == "string")
+    assert(type(list[2]) == 'string')
     opts.desc = list[2]
 
     -- cmd
-    if type(list[1]) == "string" then
+    if type(list[1]) == 'string' then
       opts.cmd = list[1]
-    elseif type(list[1]) == "function" then
-      opts.cmd = ""
+    elseif type(list[1]) == 'function' then
+      opts.cmd = ''
       opts.callback = list[1]
     else
-      error("Incorrect mapping " .. vim.inspect(list))
+      error('Incorrect mapping ' .. vim.inspect(list))
     end
   elseif #list > 2 then
-    error("Incorrect mapping " .. vim.inspect(list))
+    error('Incorrect mapping ' .. vim.inspect(list))
   end
 
   if opts.desc or opts.group then
-    if type(opts.mode) == "table" then
+    if type(opts.mode) == 'table' then
       for _, mode in pairs(opts.mode) do
         local mode_opts = vim.deepcopy(opts)
         mode_opts.mode = mode
@@ -171,42 +171,22 @@ end
 function M.to_mapping(mapping)
   mapping.silent = mapping.silent ~= false
   mapping.noremap = mapping.noremap ~= false
-  if mapping.cmd and mapping.cmd:lower():find("^<plug>") then
+  if mapping.cmd and mapping.cmd:lower():find('^<plug>') then
     mapping.noremap = false
   end
 
   mapping.buf = mapping.buffer
   mapping.buffer = nil
 
-  mapping.mode = mapping.mode or "n"
+  mapping.mode = mapping.mode or 'n'
   mapping.label = mapping.desc or mapping.name
-  mapping.keys = Util.parse_keys(mapping.prefix or "")
+  mapping.keys = Util.parse_keys(mapping.prefix or '')
 
   local opts = {}
   for _, o in ipairs(mapargs) do
     opts[o] = mapping[o]
     mapping[o] = nil
   end
-
-  if vim.fn.has("nvim-0.7.0") == 0 then
-    opts.replace_keycodes = nil
-
-    -- Neovim < 0.7.0 doesn't support descriptions
-    opts.desc = nil
-
-    -- use lua functions proxy for Neovim < 0.7.0
-    if opts.callback then
-      local functions = require("which-key.keys").functions
-      table.insert(functions, opts.callback)
-      if opts.expr then
-        opts.cmd = string.format([[luaeval('require("which-key").execute(%d)')]], #functions)
-      else
-        opts.cmd = string.format([[<cmd>lua require("which-key").execute(%d)<cr>]], #functions)
-      end
-      opts.callback = nil
-    end
-  end
-
   mapping.opts = opts
   return mapping
 end

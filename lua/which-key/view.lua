@@ -2,6 +2,7 @@ local Keys = require('which-key.keys')
 local config = require('which-key.config')
 local Layout = require('which-key.layout')
 local Util = require('which-key.util')
+local Logger = require('which-key.logger')
 
 local highlight = vim.api.nvim_buf_add_highlight
 
@@ -15,6 +16,10 @@ local state = {
     keys_average = 0,
     show_n = 0,
     show_average = 0,
+  },
+  cursor = {
+    row = 1,
+    history = {},
   },
   history = {},
 }
@@ -112,6 +117,7 @@ function M.show()
     opts.anchor = 'NW'
     opts.row = margins[1]
   end
+
   M.buf = vim.api.nvim_create_buf(false, true)
   M.win = vim.api.nvim_open_win(M.buf, false, opts)
 
@@ -195,6 +201,11 @@ function M.getchar()
   return c
 end
 
+function M.set_cursor(cursor_row)
+  state.cursor.row = cursor_row
+  vim.api.nvim_win_set_cursor(M.win, { cursor_row, 1 })
+end
+
 function M.scroll(up)
   local delta = 1
   local height = vim.api.nvim_win_get_height(M.win)
@@ -203,10 +214,10 @@ function M.scroll(up)
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(M.buf) - math.ceil(height / 2))
+    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(M.buf) - math.ceil(height / 2) + 1)
     cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
   end
-  vim.api.nvim_win_set_cursor(M.win, cursor)
+  M.set_cursor(cursor[1])
 end
 
 function M.page(up)
@@ -217,10 +228,10 @@ function M.page(up)
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(M.buf) - math.ceil(height / 2))
+    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(M.buf) - math.ceil(height / 2) + 1)
     cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
   end
-  vim.api.nvim_win_set_cursor(M.win, cursor)
+  M.set_cursor(cursor[1])
 end
 
 function M.on_close()
@@ -255,8 +266,10 @@ end
 function M.back()
   local node = Keys.get_tree(state.mode, M.buf).tree:get(state.keys, -1)
     or Keys.get_tree(state.mode).tree:get(state.keys, -1)
+  state.cursor.row = 1
   if node then
     state.keys = node.prefix_i
+    state.cursor.row = state.cursor.history[state.mode .. '_' .. node.prefix_i] or 1
   end
   state.history = table.remove(state.history, #state.history)
 end
@@ -358,7 +371,7 @@ function M.process_mappings(results, opts)
   if #results.mappings == 0 then
     M.hide()
     if results.mapping and not results.mapping.group then
-      --- Check for an exact match. Feedkeys with remap
+      --- check for an exact match, feedkeys with remap
       if results.mapping.fn then
         opts._op_icon = '󰡱'
         results.mapping.fn()
@@ -366,13 +379,10 @@ function M.process_mappings(results, opts)
         opts._op_icon = type(results.mapping.callback) == 'function' and '' or '󰞷'
         M.execute(state.keys, state.mode, state.parent_buf)
       end
-    else
-      if opts.auto then
-        -- Check for no mappings found. Feedkeys without remap
-        -- only execute if an actual key was typed while WK was open
-        opts._op_icon = '∅'
-        M.execute(state.keys, state.mode, state.parent_buf)
-      end
+    elseif opts.auto then
+      --  no mappings found, feedkeys without remap if WK is open
+      opts._op_icon = '∅'
+      M.execute(state.keys, state.mode, state.parent_buf)
     end
     return false
   end
@@ -381,6 +391,7 @@ end
 
 function M.on_keys(opts)
   state.parent_buf = vim.api.nvim_get_current_buf()
+  local key_internal = false
 
   while true do
     -- loop
@@ -393,10 +404,16 @@ function M.on_keys(opts)
     local history = Util.without(results, 'mappings')
     history.children_n = Util.count(results.mappings)
     table.insert(state.history, history)
+    if M.is_valid() then
+      local cursor = vim.api.nvim_win_get_cursor(M.win)
+      state.cursor.history[results.mode .. '_' .. results.prefix_i] = cursor[1]
+    end
 
     if not M.process_mappings(results, opts) then
       M.calculate_timings(opts)
-      Util.log_key(results, opts)
+      if key_internal == false then
+        Logger.log_key(results, opts)
+      end
       return
     end
 
@@ -415,14 +432,19 @@ function M.on_keys(opts)
 
     vim.cmd([[redraw]])
 
+    -- M.set_cursor(state.cursor.row or 1)
+
     opts._op_icon = results.mapping.group == true and '󰐕' or ''
     M.calculate_timings(opts)
-    Util.log_key(results, opts)
+    if key_internal == false then
+      Logger.log_key(results, opts)
+    end
 
     -- pause here until another character entered (while panel open)
     local c = M.getchar()
     opts._start_time = vim.fn.reltime()
 
+    key_internal = true
     if c == Util.t('<esc>') then
       M.hide()
       break
@@ -436,8 +458,9 @@ function M.on_keys(opts)
       M.scroll(true)
     elseif c == Util.t('<bs>') then
       M.back()
-      vim.api.nvim_win_set_cursor(M.win, { 1, 1 })
+      -- vim.api.nvim_win_set_cursor(M.win, { 1, 1 })
     else
+      key_internal = false
       state.keys = state.keys .. c
       if #c > 0 then
         vim.api.nvim_win_set_cursor(M.win, { 1, 1 })

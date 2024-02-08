@@ -65,11 +65,10 @@ function Layout:make_breadcrumbs()
     return
   end
   local prefix_i = self.results.prefix_i
-  local mode = self.results.mode or self.results.mapping.mode
+  local mode = self.results.mode_long or self.results.mapping.mode or self.results.mode
   local buf_path = Keys.get_tree(mode, self.results.buf).tree:path(prefix_i)
   local path = Keys.get_tree(mode).tree:path(prefix_i)
   local len = #self.results.mapping.keys.notation
-  -- vim.dbglog(#path, #buf_path, self.results.mapping.mode, self.results.mode, prefix_i)
   local cmd_line = { { '(' .. mode .. ') ', 'WhichKeyMode' } }
   for i = 1, len, 1 do
     local node = buf_path[i]
@@ -103,7 +102,6 @@ function Layout:make_breadcrumbs()
     col = col + vim.fn.strwidth(text[1])
   end
 
-  -- vim.dbglog('Breadcrumbs: ', cmd_line)
   if type(Config.options.user_hooks.breadcrumbs) == 'function' then
     self.breadcrumbs = Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
   end
@@ -214,6 +212,12 @@ function Layout:make_list(win)
     local label = item.label
     if Text.len(label) > max_label_width then
       label = vim.fn.strcharpart(label, 0, max_label_width - 2) .. ' …'
+    end
+
+    local children = item.children and tonumber(item.children) or nil
+    if children then
+      label = label .. ' +' .. children
+      -- vim.dbglog(item.prefix, item.label, children)
     end
     self.text:set(row + pad_top, start, label, item.group and 'Group' or 'Desc')
 

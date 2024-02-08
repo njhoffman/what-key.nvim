@@ -41,7 +41,7 @@
 ---@field keys KeyCodes
 ---@field mode? string
 ---@field callback fun()|nil
----@field preset boolean
+---@field preset string
 ---@field plugin string
 ---@field fn fun()
 

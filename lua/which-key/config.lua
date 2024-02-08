@@ -1,6 +1,6 @@
 local M = {}
 
-M.namespace = vim.api.nvim_create_namespace("WhichKey")
+M.namespace = vim.api.nvim_create_namespace('WhichKey')
 
 ---@class Options
 local defaults = {
@@ -27,7 +27,18 @@ local defaults = {
   },
   -- add operators that will trigger motion and text object completion
   -- to enable all native operators, set the preset / operators plugin above
-  operators = { gc = "Comments" },
+  operators = { gc = 'Comments' },
+
+  -- builtin presets, set value to table or function to override existing key or add new
+  presets = {
+    'operators',
+    'motions',
+    'text_objects',
+    'windows',
+    'nav',
+    'z',
+    'g',
+  },
   key_labels = {
     -- override the label used to display some keys. It doesn't effect WK in any other way.
     -- For example:
@@ -39,18 +50,18 @@ local defaults = {
     count = true,
   },
   icons = {
-    breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
-    separator = "➜", -- symbol used between a key and it's label
-    group = "+", -- symbol prepended to a group
+    breadcrumb = '»', -- symbol used in the command line area that shows your active key combo
+    separator = '➜', -- symbol used between a key and it's label
+    group = '+', -- symbol prepended to a group
   },
   popup_mappings = {
-    scroll_down = "<c-d>", -- binding to scroll down inside the popup
-    scroll_up = "<c-u>", -- binding to scroll up inside the popup
+    scroll_down = '<c-d>', -- binding to scroll down inside the popup
+    scroll_up = '<c-u>', -- binding to scroll up inside the popup
   },
   popup_user_mappings = {},
   window = {
-    border = "none", -- none, single, double, shadow
-    position = "bottom", -- bottom, top
+    border = 'none', -- none, single, double, shadow
+    position = 'bottom', -- bottom, top
     margin = { 1, 0, 1, 0 }, -- extra window margin [top, right, bottom, left]
     padding = { 1, 2, 1, 2 }, -- extra window padding [top, right, bottom, left]
     winblend = 0, -- value between 0-100 0 for fully opaque and 100 for fully transparent
@@ -59,33 +70,33 @@ local defaults = {
     height = { min = 4, max = 25 }, -- min and max height of the columns
     width = { min = 20, max = 50 }, -- min and max width of the columns
     spacing = 3, -- spacing between columns
-    align = "left", -- align columns left, center or right
+    align = 'left', -- align columns left, center or right
   },
   ignore_missing = false, -- enable this to hide mappings for which you didn't specify a label
-  hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "^:", "^ ", "^call ", "^lua " }, -- hide mapping boilerplate
+  hidden = { '<silent>', '<cmd>', '<Cmd>', '<CR>', '^:', '^ ', '^call ', '^lua ' }, -- hide mapping boilerplate
   ignored = {}, -- list of patterns to ignore complete key
   show_help = true, -- show a help message in the command line for using WhichKey
   show_keys = true, -- show the currently pressed key and its label as a message in the command line
-  triggers = "auto", -- automatically setup triggers
+  triggers = 'auto', -- automatically setup triggers
   -- triggers = {"<leader>"} -- or specifiy a list manually
   -- list of triggers, where WhichKey should not wait for timeoutlen and show immediately
   triggers_nowait = {
     -- marks
-    "`",
+    '`',
     "'",
-    "g`",
+    'g`',
     "g'",
     -- registers
     '"',
-    "<c-r>",
+    '<c-r>',
     -- spelling
-    "z=",
+    'z=',
   },
   triggers_blacklist = {
     -- list of mode / prefixes that should never be hooked by WhichKey
     -- this is mostly relevant for keymaps that start with a native binding
-    i = { "j", "k" },
-    v = { "j", "k" },
+    i = { 'j', 'k' },
+    v = { 'j', 'k' },
   },
   -- disable the WhichKey popup for certain buf types and file types.
   -- Disabled by deafult for Telescope
@@ -98,17 +109,17 @@ local defaults = {
     list_pre = nil,
     list_post = nil,
     breadcrumbs = nil,
-  },           
+  },
   vimade_fade = false,
-  debug = false
-}                         
+  debug = false,
+}
 
 ---@type Options
 M.options = {}
 
 ---@param options? Options
 function M.setup(options)
-  M.options = vim.tbl_deep_extend("force", {}, defaults, options or {})
+  M.options = vim.tbl_deep_extend('force', {}, defaults, options or {})
 end
 
 M.setup()

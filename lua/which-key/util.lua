@@ -7,12 +7,7 @@ local cache = {}
 ---@type table<string,string>
 local tcache = {}
 local cache_leaders = ''
-
-M.debug = require('which-key.util.log').debug
-M.info = require('which-key.util.log').info
-M.warn = require('which-key.util.log').warn
-M.error = require('which-key.util.log').error
-M.log_key = require('which-key.util.log').log_key
+local Logger = require('which-key.logger')
 
 function M.check_cache()
   ---@type string
@@ -195,10 +190,20 @@ end
 
 function M.check_mode(mode, buf)
   if not ('nvsxoiRct'):find(mode) then
-    M.error(string.format('Invalid mode %q for buf %d', mode, buf or 0))
+    Logger.error(string.format('Invalid mode %q for buf %d', mode, buf or 0))
     return false
   end
   return true
+end
+
+function M.update_mode(mode, op)
+  vim.api.nvim_set_var('which_key_mode', mode)
+  if op and tostring(op) ~= '' then
+    vim.api.nvim_set_var('which_key_op', op)
+    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
+  else
+    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)
+  end
 end
 
 M.ctrlkey = function(c)

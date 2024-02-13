@@ -10,7 +10,6 @@ local cache = {}
 local tcache = {}
 local cache_leaders = ''
 
-
 function M.check_cache()
   ---@type string
   local leaders = (vim.g.mapleader or '') .. ':' .. (vim.g.maplocalleader or '')
@@ -199,12 +198,14 @@ function M.check_mode(mode, buf)
 end
 
 function M.update_mode(mode, op)
-  vim.api.nvim_set_var('which_key_mode', mode)
-  if op and tostring(op) ~= '' then
-    vim.api.nvim_set_var('which_key_op', op)
-    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
-  else
-    vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)
+  if mode then
+    vim.api.nvim_set_var('which_key_mode', mode)
+    if op and tostring(op) ~= '' then
+      vim.api.nvim_set_var('which_key_op', op)
+      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
+    else
+      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)
+    end
   end
 end
 

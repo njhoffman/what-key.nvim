@@ -1,28 +1,38 @@
 local Util = require('which-key.util')
 local Config = require('which-key.config')
 local Text = require('which-key.text')
+local state = require('which-key.view.state')
+local view_utils = require('which-key.view.utils')
+local Logger = require('which-key.logger')
 
 -- function Layout:make_list(win)
-local render_list = function(self, win)
-  local win_width = vim.api.nvim_win_get_width(win)
-  local canvas_width = win_width - self.options.window.padding[2] - self.options.window.padding[4]
+local render_list = function(self)
+  if not view_utils.is_valid(state.buf, state.win) then
+    Logger.debug('List not rendered (invalid buf/win) ' .. tostring(state.buf) .. '/' .. tostring(state.win))
+    return
+  end
 
   if type(Config.options.user_hooks.list_pre) == 'function' then
     self.items = Config.options.user_hooks.list_pre(self.items)
   end
 
+  local win_width = vim.api.nvim_win_get_width(state.win)
+  local canvas_width = view_utils.get_canvas_width()
+
   local max_key_width = self:max_width('key')
   local max_label_width = self:max_width('label')
   local max_value_width = self:max_width('value')
+  local max_children = self:max_width('children')
+  local max_children_width = max_children and Text.len('+' .. max_children) or 0
 
-  local intro_width = max_key_width + 2 + Text.len(self.options.icons.separator) + self.options.layout.spacing
-  local max_width = max_label_width + intro_width + max_value_width
+  local intro_width = max_key_width + 2 + Text.len(Config.options.icons.separator) + Config.options.layout.spacing
+  local max_width = max_label_width + intro_width + max_value_width + max_children_width
   if max_width > canvas_width then
     max_width = canvas_width
   end
 
   local column_width = max_width
-  local bounds = self:get_bounds()
+  local bounds = view_utils.get_bounds()
 
   if column_width > bounds.width.max then
     column_width = bounds.width.max
@@ -52,22 +62,25 @@ local render_list = function(self, win)
 
   local col = 1
   local row = 1
-  local pad_top = self.options.window.padding[3]
-  local pad_left = self.options.window.padding[4]
+  local pad_top = Config.options.window.padding[3]
+  local pad_left = Config.options.window.padding[4]
 
   local columns_used = math.min(columns, math.ceil(#self.items / height))
   local offset_x = 0
   if columns_used < columns then
-    if self.options.layout.align == 'right' then
+    if Config.options.layout.align == 'right' then
       offset_x = (columns - columns_used) * column_width
-    elseif self.options.layout.align == 'center' then
+    elseif Config.options.layout.align == 'center' then
       offset_x = math.floor((columns - columns_used) * column_width / 2)
     end
   end
 
   for _, item in pairs(self.items) do
     local parts = {}
-    local start = (col - 1) * column_width + self.options.layout.spacing + offset_x
+    local start = (col - 1) * column_width + Config.options.layout.spacing + offset_x
+    if columns == 1 then
+      start = (col - 1) * column_width + offset_x
+    end
     if col == 1 then
       start = start + pad_left
     end
@@ -86,8 +99,8 @@ local render_list = function(self, win)
     self.text:set(row + pad_top, start, key, '')
     start = start + Text.len(key) + 1
 
-    self.text:set(row + pad_top, start, self.options.icons.separator, 'Separator')
-    start = start + Text.len(self.options.icons.separator) + 1
+    self.text:set(row + pad_top, start, Config.options.icons.separator, 'Separator')
+    start = start + Text.len(Config.options.icons.separator) + 1
 
     if item.value then
       local value = item.value
@@ -106,12 +119,12 @@ local render_list = function(self, win)
 
     local label = item.label
     if Text.len(label) > max_label_width then
-      label = vim.fn.strcharpart(label, 0, max_label_width - 2) .. ' …'
+      label = vim.fn.strcharpart(label, 0, max_label_width - 2) .. '…'
     end
 
     local children = item.children and tonumber(item.children) or nil
     if children then
-      label = label .. ' +' .. children
+      label = label .. string.rep(' ', max_label_width - Text.len(label) - #tostring(children) + 1) .. ' +' .. children
       -- vim.dbglog(item.prefix, item.label, children)
     end
     self.text:set(row + pad_top, start, label, item.group and 'Group' or 'Desc')
@@ -128,7 +141,7 @@ local render_list = function(self, win)
     self.text = Config.options.user_hooks.list_post(self.text)
   end
 
-  for _ = 1, self.options.window.padding[3], 1 do
+  for _ = 1, Config.options.window.padding[3], 1 do
     self.text:nl()
   end
 

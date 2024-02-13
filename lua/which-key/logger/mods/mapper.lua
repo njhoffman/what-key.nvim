@@ -4,9 +4,25 @@ M.init = function(logger)
   M.logger = logger
 end
 
+function M.log_counts()
+  local counts = require('which-key.mapper').get_counts()
+  local line = ''
+  for mode, count in pairs(counts) do
+    local m = vim.fn.split(mode, '_')
+    if type(m[2]) == 'string' and m[1] == 'ok' then
+      if line == '' then
+        line = ' (' .. m[2] .. ':' .. count
+      else
+        line = line .. ' ' .. m[2] .. ':' .. count
+      end
+    end
+  end
+  M.logger.debug(line)
+end
+
 function M.dump_lines(opts)
   opts = opts or {}
-  local key_cats = require('which-key.keys').dump()
+  local key_cats = require('which-key.mapper').dump()
   local lines = {}
 
   for _, conflict in ipairs(key_cats.conflicts) do
@@ -29,7 +45,7 @@ end
 
 function M.dump_tree(opts)
   opts = opts or {}
-  local key_cats = require('which-key.keys').dump()
+  local key_cats = require('which-key.mapper').dump()
   M.debug(key_cats)
 end
 

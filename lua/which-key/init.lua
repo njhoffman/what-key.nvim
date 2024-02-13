@@ -1,10 +1,13 @@
 local Keys = require('which-key.keys')
 local Util = require('which-key.util')
 local Logger = require('which-key.logger')
+local Mapper = require('which-key.mapper')
+local hooks = require('which-key.keys.hooks')
 
 ---@class WhichKey
 local M = {}
 
+local disabled = false
 local loaded = false -- once we loaded everything
 local scheduled = false
 local load_start = nil
@@ -15,7 +18,12 @@ local function schedule_load()
   end
   scheduled = true
   if vim.v.vim_did_enter == 0 then
-    vim.cmd([[au VimEnter * ++once lua require("which-key").load()]])
+    -- vim.cmd([[au VimEnter * ++once lua require("which-key").load()]])
+    vim.api.nvim_create_autocmd('VimEnter', {
+      group = 'WhichKey',
+      once = true,
+      command = 'lua vim.defer_fn(require("which-key").load, 100)',
+    })
   else
     M.load()
   end
@@ -23,13 +31,18 @@ end
 
 ---@param options? Options
 function M.setup(options)
-  load_start = vim.fn.reltime()
-  require('which-key.config').setup(options)
-  vim.api.nvim_create_augroup('WhichKey', { clear = true })
-  schedule_load()
+  if not disabled then
+    load_start = vim.fn.reltime()
+    require('which-key.config').setup(options)
+    vim.api.nvim_create_augroup('WhichKey', { clear = true })
+    schedule_load()
+  end
 end
 
 function M.start(keys, opts)
+  if disabled then
+    return
+  end
   opts = opts or {}
   if type(opts) == 'string' then
     opts = { mode = opts }
@@ -43,14 +56,11 @@ function M.start(keys, opts)
 
   local buf = vim.api.nvim_get_current_buf()
   -- make sure the trees exist for update
-  Keys.get_tree(opts.mode)
-  Keys.get_tree(opts.mode, buf)
+  Mapper.get_tree(opts.mode)
+  Mapper.get_tree(opts.mode, buf)
   -- update only trees related to buf
-  -- Keys.update(buf)
-  Keys.update()
+  Keys.update(buf)
   -- trigger which key
-  -- show, view.open, view.on_keys
-  -- (already open) char, on_keys
   require('which-key.view').start(keys, opts)
 end
 
@@ -74,7 +84,9 @@ local queue = {}
 -- Defer registering keymaps until VimEnter
 function M.register(mappings, opts)
   schedule_load()
-  if loaded then
+  if not opts or type(opts.mode) == 'nil' then
+    Logger.info('No mode passed to register: ' .. vim.inspect(mappings, opts))
+  elseif loaded then
     Keys.register(mappings, opts)
     Keys.update()
   else
@@ -83,14 +95,17 @@ function M.register(mappings, opts)
 end
 
 -- Load mappings and update only once
-function M.load()
+function M.load(vim_enter)
   if loaded then
     return
   end
   require('which-key.plugins').setup()
   require('which-key.presets').setup()
   require('which-key.colors').setup()
+  -- require('which-key.onkey').setup()
   Keys.setup()
+  Keys.register({}, { prefix = '<leader>', mode = 'n' })
+  Keys.register({}, { prefix = '<leader>', mode = 'v' })
 
   for _, reg in pairs(queue) do
     local opts = reg[2] or {}
@@ -99,21 +114,7 @@ function M.load()
   end
 
   Keys.update()
-  -- TODO: why not work - "n @!     v " or "n @!     c "
-  -- local buf = vim.api.nvim_get_current_buf()
-  -- local mode = Util.get_mode()
-  -- Keys.get_tree(mode)
-  -- Keys.get_tree(mode, buf)
-  -- Keys.update(buf)
-
-  local counts = Keys.dump().counts
-  Logger.log_startup(load_start, counts, {
-    hooked = Keys.hooked,
-    auto = Keys.hooked_auto,
-    nop = Keys.hooked_nop,
-    fast = Keys.hooked_fast,
-  })
-
+  Logger.log_startup(load_start)
   queue = {}
   loaded = true
 end

@@ -5,8 +5,12 @@ M.init = function(logger)
 end
 
 local last_prefix = ''
-function M.log_key(results, opts)
+function M.log_key(results, opts, internal_key)
   -- ﳠ ∅  󰐕   落  󰞷 󰡱  ﮜ 
+  if internal_key and not vim.tbl_isempty(internal_key) and internal_key.key ~= 'back' then
+    return
+  end
+
   -- prevent logging duplicate key
   if false and (results.mode .. results.prefix_i) == last_prefix then
     return
@@ -24,14 +28,18 @@ function M.log_key(results, opts)
     .. time_diff:sub(1, 8)
 
   local mode = results.mode_long or map.mode or results.mode
-  line = line .. (' (' .. mode .. ') ')
-  line = line .. (type(results.prefix_i) == 'string' and results.prefix_i or '')
-  line = line .. string.rep(' ', 5 - #(results.prefix_i or '')) .. ' ' .. #results.mappings .. ' maps'
+  line = line .. ' (' .. mode .. ') ' .. (#mode == 2 and ' ' or '  ')
+  line = line .. (type(results.prefix_i) == 'string' and vim.fn.keytrans(results.prefix_i) or '')
+  line = line
+    .. string.rep(' ', 9 - #(results.prefix_i or '') - #tostring(#results.mappings))
+    .. #results.mappings
+    .. '   '
   M.logger.debug(line)
-  -- .. (type(map.name) == 'string' and map.name or type(map.label) == 'string' and map.label or '')
 end
 
-function M.log_startup(start_time, counts, hooks)
+function M.log_startup(start_time)
+  local counts = require('which-key.mapper').get_counts()
+  local hooks = require('which-key.keys.hooks')
   local time_diff = vim.fn.reltimestr(vim.fn.reltime(start_time))
   local line = 'load ' .. time_diff:sub(1, 8) .. '  ' .. counts.ok
   local sub_line = ''
@@ -50,9 +58,9 @@ function M.log_startup(start_time, counts, hooks)
     .. ' ['
     .. #vim.tbl_keys(hooks.hooked)
     .. '.'
-    .. #vim.tbl_keys(hooks.auto)
+    .. #vim.tbl_keys(hooks.hooked_auto)
     .. '.'
-    .. #vim.tbl_keys(hooks.nop)
+    .. #vim.tbl_keys(hooks.hooked_nop)
     .. ' hooks]'
   M.logger.debug(line)
 end

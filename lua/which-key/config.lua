@@ -13,17 +13,6 @@ local defaults = {
       enabled = true, -- enabling this will show WhichKey when pressing z= to select spelling suggestions
       suggestions = 20, -- how many suggestions should be shown in the list?
     },
-    presets = {
-      operators = true, -- adds help for operators like d, y, ...
-      motions = true, -- adds help for motions
-      text_objects = true, -- help for text objects triggered after entering an operator
-      windows = true, -- default bindings on <c-w>
-      nav = true, -- misc bindings to work with windows
-      z = true, -- bindings for folds, spelling and others prefixed with z
-      g = true, -- bindings for prefixed with g
-      extra = false, -- overrides other plugins for extensive built-in bindings
-      mouse = false, -- bindings for the mouse (only works with extra)
-    },
   },
   -- add operators that will trigger motion and text object completion
   -- to enable all native operators, set the preset / operators plugin above
@@ -54,9 +43,16 @@ local defaults = {
     separator = '➜', -- symbol used between a key and it's label
     group = '+', -- symbol prepended to a group
   },
+  --stylua: ignore
   popup_mappings = {
-    scroll_down = '<c-d>', -- binding to scroll down inside the popup
-    scroll_up = '<c-u>', -- binding to scroll up inside the popup
+    help_menu    = '<F6>',       -- binding to scroll down inside the popup
+    toggle_debug = '<F5>',       -- show detailed keymapping information
+    options_menu = '<F4>',       -- launch options menu
+    launch_wk    = '<F3>',       -- launch which-key manually
+    scroll_down  = '<C-S-Down>', -- binding to scroll down inside the popup
+    scroll_up    = '<C-S-Up>',   -- binding to scroll up inside the popup
+    page_down    = '<M-f>',      -- binding to scroll down inside the popup
+    page_up      = '<M-b>',      -- binding to scroll up inside the popup
   },
   popup_user_mappings = {},
   window = {
@@ -71,6 +67,8 @@ local defaults = {
     width = { min = 20, max = 50 }, -- min and max width of the columns
     spacing = 3, -- spacing between columns
     align = 'left', -- align columns left, center or right
+    groups_first = true,
+    children_count = true,
   },
   ignore_missing = false, -- enable this to hide mappings for which you didn't specify a label
   hidden = { '<silent>', '<cmd>', '<Cmd>', '<CR>', '^:', '^ ', '^call ', '^lua ' }, -- hide mapping boilerplate

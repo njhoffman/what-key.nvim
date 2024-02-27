@@ -1,3 +1,5 @@
+local log_utils = require('which-key.logger.utils')
+
 local M = {}
 
 M.init = function(logger)
@@ -5,7 +7,7 @@ M.init = function(logger)
 end
 
 local last_prefix = ''
-function M.log_key(results, opts, internal_key)
+M.log_key = function(results, opts, internal_key)
   -- ﳠ ∅  󰐕   落  󰞷 󰡱  ﮜ 
   if internal_key and not vim.tbl_isempty(internal_key) and internal_key.key ~= 'back' then
     return
@@ -37,31 +39,10 @@ function M.log_key(results, opts, internal_key)
   M.logger.debug(line)
 end
 
-function M.log_startup(start_time)
-  local counts = require('which-key.mapper').get_counts()
-  local hooks = require('which-key.keys.hooks')
+M.log_startup = function(start_time)
   local time_diff = vim.fn.reltimestr(vim.fn.reltime(start_time))
-  local line = 'load ' .. time_diff:sub(1, 8) .. '  ' .. counts.ok
-  local sub_line = ''
-  for mode, count in pairs(counts) do
-    local m = vim.fn.split(mode, '_')
-    if type(m[2]) == 'string' and m[1] == 'ok' then
-      if sub_line == '' then
-        sub_line = ' (' .. m[2] .. ':' .. count
-      else
-        sub_line = sub_line .. ' ' .. m[2] .. ':' .. count
-      end
-    end
-  end
-  line = line .. sub_line .. ')'
-  line = line
-    .. ' ['
-    .. #vim.tbl_keys(hooks.hooked)
-    .. '.'
-    .. #vim.tbl_keys(hooks.hooked_auto)
-    .. '.'
-    .. #vim.tbl_keys(hooks.hooked_nop)
-    .. ' hooks]'
+  local title = '襤' .. time_diff:sub(1, 8) .. '  '
+  local line = title .. log_utils.key_counts()
   M.logger.debug(line)
 end
 
@@ -69,11 +50,13 @@ M.timing_summary = function()
   local state = require('which-key.view').state
   local lineout = ''
   if state.timing.show_n > 0 then
-    lineout = lineout .. string.format('**show**   `%.4f` %2d', state.timing.show_average, state.timing.show_n)
+    lineout = lineout
+      .. string.format('**show**   `%.4f` %2d', state.timing.show_average, state.timing.show_n)
   end
   if state.timing.keys_n > 0 then
     lineout = lineout ~= '' and lineout .. '\n' or lineout
-    lineout = lineout .. string.format('**keys**   `%.4f` %2d', state.timing.keys_average, state.timing.keys_n)
+    lineout = lineout
+      .. string.format('**keys**   `%.4f` %2d', state.timing.keys_average, state.timing.keys_n)
   end
   if lineout ~= '' then
     vim.notify(lineout, vim.log.levels.INFO, {

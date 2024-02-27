@@ -5,17 +5,18 @@ local defaults = require('which-key.presets.defaults')
 local presets = {}
 
 local setup_mappings = function()
-  for k, v in pairs(presets) do
-    for _, m in ipairs(v[1]) do
-      if m == 'no' then
-        for op_key, op_label in pairs(v[2]) do
-          config.options.operators[op_key] = op_label
+  for name, maps in pairs(presets) do
+    for _, mode in ipairs(maps[1]) do
+      if mode == 'no' then
+        for op_key, op_label in pairs(maps[2]) do
+          maps[2][op_key] = config.options.operators[op_key] or op_label
+          config.options.operators[op_key] = maps[2][op_key]
         end
-      else
-        wk.register(v[2], { mode = m, prefix = '', preset = k })
+        mode = 'n'
       end
+      wk.register(maps[2], { mode = mode, prefix = '', preset = name })
     end
-    presets[k] = v[2]
+    presets[name] = maps[2]
   end
 end
 

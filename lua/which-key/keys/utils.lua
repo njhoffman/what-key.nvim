@@ -9,7 +9,10 @@ function M.map(mode, prefix_n, cmd, buf, opts)
     return ret and ret.lhs and ret.rhs and ret.rhs ~= cmd and ret or nil
   end)
   if other then
-    table.insert(state.duplicates, { mode = mode, prefix = prefix_n, cmd = cmd, buf = buf, other = other })
+    table.insert(
+      state.duplicates,
+      { mode = mode, prefix = prefix_n, cmd = cmd, buf = buf, other = other }
+    )
   end
   if buf ~= nil then
     pcall(vim.api.nvim_buf_set_keymap, buf, mode, prefix_n, cmd, opts)

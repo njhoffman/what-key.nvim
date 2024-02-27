@@ -1,4 +1,5 @@
 local Config = require('which-key.config')
+local Logger = require('which-key.logger')
 local Mapper = require('which-key.mapper')
 local Hooks = require('which-key.keys.hooks')
 local state = require('which-key.keys.state')
@@ -21,7 +22,8 @@ function M.register(mappings, opts)
       Mapper.get_tree(mapping.mode)
     end
     if mapping.cmd ~= nil then
-      Mapper.map(mapping.mode, mapping.prefix, mapping.cmd, mapping.buf, mapping.opts)
+      vim.dbglog('**** NO MAPPING *****', mapping)
+      -- Mapper.map(mapping.mode, mapping.prefix, mapping.cmd, mapping.buf, mapping.opts)
     end
     Mapper.get_tree(mapping.mode, mapping.buf).tree:add(mapping)
   end
@@ -30,6 +32,7 @@ end
 function M.update(buf)
   for k, tree in pairs(state.mappings) do
     if tree.buf and not vim.api.nvim_buf_is_valid(tree.buf) then
+      vim.dbglog('keys rm update: ' .. tree.buf)
       -- remove group for invalid buffers
       state.mappings[k] = nil
     elseif not buf or not tree.buf or buf == tree.buf then
@@ -44,25 +47,25 @@ function M.update(buf)
 end
 
 function M.setup()
-  -- 0.0324  367 (n:306 o:57 v:2)
-  -- local builtin_ops = require('which-key.plugins.presets').operators
-  local builtin_ops = require('which-key.presets').presets.operators
-  for op, _ in pairs(builtin_ops) do
-    state.operators[op] = true
-  end
-  local mappings = {}
+  local op_mappings = {}
   for op, label in pairs(Config.options.operators) do
     state.operators[op] = true
-    if builtin_ops[op] then
-      mappings[op] = { name = label }
-    end
+    op_mappings[op] = { name = label }
   end
   for _, t in pairs(Config.options.triggers_nowait) do
     state.nowait[t] = true
   end
 
-  M.register(mappings, { mode = 'n', preset = 'operators' })
-  M.register({ i = { name = 'inside' }, a = { name = 'around' } }, { mode = 'v', preset = 'text_objects' })
+  -- M.register(op_mappings, { mode = 'n', preset = 'operators' })
+  M.register(op_mappings, { mode = 'v', preset = 'operators' })
+  -- M.register({
+  --   i = { name = 'inside' },
+  --   a = { name = 'around' },
+  -- }, { mode = 'n', preset = 'text_objects' })
+  M.register({
+    i = { name = 'inside' },
+    a = { name = 'around' },
+  }, { mode = 'v', preset = 'text_objects' })
 
   for mode, blacklist in pairs(Config.options.triggers_blacklist) do
     for _, prefix_n in ipairs(blacklist) do

@@ -19,16 +19,8 @@ function M.process_motions(ret, mode, prefix_i, buf)
     op_i, op_n = M.get_operator(prefix_i)
   end
 
-  -- if listed in config.operators
-  if prefix_i == 'g@' then
-    vim.dbglog('g@', ret.mode, vim.opt.operatorfunc._value)
-    -- ModeChanged  n:no   'g@' [S]
-    -- ModeChanged  no:n   'g@'
-    -- WhichKeyMode n:no   'S' - S
-  end
-
   if (mode == 'n' or mode == 'v') and op_i then
-    ret.mode_long = mode .. 'o'
+    ret.mode_ex = mode .. 'o'
     local op_prefix_i = prefix_i:sub(#op_i + 1)
     local op_count = op_prefix_i:match('^(%d+)')
     if op_count == '0' or Config.options.motions.count == false then
@@ -42,10 +34,14 @@ function M.process_motions(ret, mode, prefix_i, buf)
     local op_results = require('which-key.mapper').get_mappings('o', op_prefix_i, buf)
 
     if not ret.mapping and op_results.mapping then
-      ret.mode_long = 'o'
+      ret.mode_ex = 'o'
       ret.mapping = op_results.mapping
-      ret.mapping.prefix = op_n .. (op_count or '') .. ret.mapping.prefix
-      ret.mapping.keys = Util.parse_keys(ret.mapping.prefix)
+      if not ret.mapping.prefix then
+        vim.dbglog('++', ret)
+      else
+        ret.mapping.keys = Util.parse_keys(ret.mapping.prefix)
+        ret.mapping.prefix = op_n .. (op_count or '') .. ret.mapping.prefix
+      end
     end
 
     for _, mapping in pairs(op_results.mappings) do

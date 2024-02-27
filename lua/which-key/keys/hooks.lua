@@ -56,6 +56,7 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   end
   -- never hook into select mode
   if mode == 's' then
+    vim.notify('which-key: select mode is not supported', vim.log.levels.WARN)
     return
   end
   -- never hook into operator pending mode
@@ -67,9 +68,11 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
     return
   end
   -- never hook into operators in visual mode
-  if (mode == 'v' or mode == 'x') and state.operators[prefix_n] then
-    return
-  end
+  -- if (mode == 'v' or mode == 'x') and state.operators[prefix_n] then
+  --   return
+  -- end
+
+  -- vim.dbglog('hook', secret_only, mode, buf, tostring(prefix_n))
 
   -- Check if we need to create the hook
   if type(Config.options.triggers) == 'string' and Config.options.triggers ~= 'auto' then
@@ -93,6 +96,7 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   local opts = { noremap = true, silent = true }
   local id = M.hook_id(prefix_n, mode, buf)
   local id_global = M.hook_id(prefix_n, mode)
+
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
     local cmd = [[<cmd>lua require("which-key").start(%q, {mode = %q, auto = true})<cr>]]
@@ -107,9 +111,9 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
 
     if not state.nowait[prefix_n] then
       -- nops are needed, so that WhichKey always respects timeoutlen
-      opts.desc = 'which-key trigger:nop ' .. ' (' .. mapmode .. ') ' .. prefix_n .. ' :<nop>'
-      M.hooked_nop[id] = true
-      keys_utils.map(mapmode, prefix_n .. secret, '<nop>', buf, opts)
+      -- opts.desc = 'which-key trigger:nop ' .. ' (' .. mapmode .. ') ' .. prefix_n .. ' :<nop>'
+      -- M.hooked_nop[id] = true
+      -- keys_utils.map(mapmode, prefix_n .. secret, '<nop>', buf, opts)
     else
       M.hooked_fast[id] = true
     end
@@ -121,9 +125,12 @@ end
 ---@param node Node
 function M.add_hooks(mode, buf, node, secret_only)
   if not node.mapping then
-    node.mapping = { prefix = node.prefix_n, group = true, keys = Util.parse_keys(node.prefix_n) }
+    node.mapping = vim.tbl_deep_extend('force', {}, {
+      prefix = node.prefix_n,
+      keys = Util.parse_keys(node.prefix_n),
+    })
   end
-  if node.prefix_n ~= '' and node.mapping.group == true and not node.mapping.cmd then
+  if node.prefix_n ~= '' and (node.mapping.group == true and not node.mapping.cmd) or node.op_i then
     -- first non-cmd level, so create hook and make all decendents secret only
     M.hook_add(node.prefix_n, mode, buf, secret_only)
     secret_only = true

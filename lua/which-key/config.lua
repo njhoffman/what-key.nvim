@@ -17,8 +17,10 @@ local defaults = {
   -- add operators that will trigger motion and text object completion
   -- to enable all native operators, set the preset / operators plugin above
   operators = { gc = 'Comments' },
-
-  -- builtin presets, set value to table or function to override existing key or add new
+  motions = {
+    count = true,
+  },
+  -- each item can be 'name', {'name', opts } for builtin presets, or a user defined function
   presets = {
     'operators',
     'motions',
@@ -28,6 +30,12 @@ local defaults = {
     'z',
     'g',
   },
+
+  ignore_unnamed_groups = false,
+  ignore_missing_desc = false,
+  hidden = { '<silent>', '<cmd>', '<Cmd>', '<CR>', '^:', '^ ', '^call ', '^lua ' }, -- hide mapping boilerplate
+  ignored = {}, -- list of patterns to ignore complete key
+
   key_labels = {
     -- override the label used to display some keys. It doesn't effect WK in any other way.
     -- For example:
@@ -35,16 +43,13 @@ local defaults = {
     -- ["<cr>"] = "RET",
     -- ["<tab>"] = "TAB",
   },
-  motions = {
-    count = true,
-  },
   icons = {
     breadcrumb = '»', -- symbol used in the command line area that shows your active key combo
     separator = '➜', -- symbol used between a key and it's label
     group = '+', -- symbol prepended to a group
   },
   --stylua: ignore
-  popup_mappings = {
+  mappings = {
     help_menu    = '<F6>',       -- binding to scroll down inside the popup
     toggle_debug = '<F5>',       -- show detailed keymapping information
     options_menu = '<F4>',       -- launch options menu
@@ -54,7 +59,8 @@ local defaults = {
     page_down    = '<M-f>',      -- binding to scroll down inside the popup
     page_up      = '<M-b>',      -- binding to scroll up inside the popup
   },
-  popup_user_mappings = {},
+  mappings_user = {},
+
   window = {
     border = 'none', -- none, single, double, shadow
     position = 'bottom', -- bottom, top
@@ -70,13 +76,20 @@ local defaults = {
     groups_first = true,
     children_count = true,
   },
-  ignore_missing = false, -- enable this to hide mappings for which you didn't specify a label
-  hidden = { '<silent>', '<cmd>', '<Cmd>', '<CR>', '^:', '^ ', '^call ', '^lua ' }, -- hide mapping boilerplate
-  ignored = {}, -- list of patterns to ignore complete key
+  other_layouts = {},
+
   show_help = true, -- show a help message in the command line for using WhichKey
   show_keys = true, -- show the currently pressed key and its label as a message in the command line
+
+  -- triggers = { blacklist = {}, nowait = {}, list = {},
+  --     auto = { enabled = true, groups = true/false/'named',
+  --     presets: true/false/{ 'operators', ' text_objects' } }
   triggers = 'auto', -- automatically setup triggers
   -- triggers = {"<leader>"} -- or specifiy a list manually
+  triggers_auto = {
+    groups = true,
+    presets = true,
+  },
   -- list of triggers, where WhichKey should not wait for timeoutlen and show immediately
   triggers_nowait = {
     -- marks

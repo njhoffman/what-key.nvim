@@ -8,7 +8,9 @@ local Logger = require('which-key.logger')
 -- function Layout:make_list(win)
 local render_list = function(self)
   if not view_utils.is_valid(state.buf, state.win) then
-    Logger.debug('List not rendered (invalid buf/win) ' .. tostring(state.buf) .. '/' .. tostring(state.win))
+    Logger.debug(
+      'List not rendered (invalid buf/win) ' .. tostring(state.buf) .. '/' .. tostring(state.win)
+    )
     return
   end
 
@@ -25,7 +27,10 @@ local render_list = function(self)
   local max_children = self:max_width('children')
   local max_children_width = max_children and Text.len('+' .. max_children) or 0
 
-  local intro_width = max_key_width + 2 + Text.len(Config.options.icons.separator) + Config.options.layout.spacing
+  local intro_width = max_key_width
+    + 2
+    + Text.len(Config.options.icons.separator)
+    + Config.options.layout.spacing
   local max_width = max_label_width + intro_width + max_value_width + max_children_width
   if max_width > canvas_width then
     max_width = canvas_width
@@ -49,7 +54,8 @@ local render_list = function(self)
       column_width = bounds.width.min
     end
   else
-    max_value_width = math.min(max_value_width or win_width, math.floor((column_width - intro_width) / 2))
+    max_value_width =
+      math.min(max_value_width or win_width, math.floor((column_width - intro_width) / 2))
   end
 
   local columns = math.floor(win_width / column_width)
@@ -96,13 +102,15 @@ local render_list = function(self)
     end
 
     table.insert(parts, { row + pad_top, start, key, '' })
-    self.text:set(row + pad_top, start, key, '')
+    self.text:set(row + pad_top, start, key, 'Key')
     start = start + Text.len(key) + 1
 
     self.text:set(row + pad_top, start, Config.options.icons.separator, 'Separator')
     start = start + Text.len(Config.options.icons.separator) + 1
 
     if item.value then
+      -- value = "  17    [Util.t(p_maps.scroll_down)]  = 'scroll_down',"
+      -- order = 5, highlights = { [1] = { [1] = 1, [2] = 5, [3] = "Number" } },
       local value = item.value
       start = start + 1
       if Text.len(value) > max_value_width then
@@ -123,11 +131,15 @@ local render_list = function(self)
     end
 
     local children = item.children and tonumber(item.children) or nil
+    local hl = item.op_i and 'Operator' or item.group and 'Group' or 'Desc'
     if children then
-      label = label .. string.rep(' ', max_label_width - Text.len(label) - #tostring(children) + 1) .. ' +' .. children
-      -- vim.dbglog(item.prefix, item.label, children)
+      hl = item.op_i and 'Operator' or item.group and 'Group' or 'Multi'
+      label = label
+        .. string.rep(' ', max_label_width - Text.len(label) - #tostring(children) + 1)
+        .. ' +'
+        .. children
     end
-    self.text:set(row + pad_top, start, label, item.group and 'Group' or 'Desc')
+    self.text:set(row + pad_top, start, label, hl)
 
     if row % height == 0 then
       col = col + 1

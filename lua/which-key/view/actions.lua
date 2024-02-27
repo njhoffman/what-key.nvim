@@ -4,21 +4,21 @@ local state = require('which-key.view.state')
 local window = require('which-key.view.window')
 local debug = require('which-key.view.debug')
 
-local p_maps = Config.options.popup_mappings
-local pu_maps = Config.options.popup_user_mappings
+local maps = Config.options.mappings
+local maps_u = Config.options.mappings_user
 
 --stylua: ignore
 local internal_maps = {
   [Util.t('<esc>')]             = 'hide',
   [Util.t('<bs>')]              = 'back',
-  [Util.t(p_maps.page_down)]    = 'page_down',
-  [Util.t(p_maps.page_up)]      = 'page_up',
-  [Util.t(p_maps.scroll_up)]    = 'scroll_up',
-  [Util.t(p_maps.scroll_down)]  = 'scroll_down',
-  [Util.t(p_maps.toggle_debug)] = 'toggle_debug',
-  [Util.t(p_maps.launch_wk)]    = 'launch_wk',
-  [Util.t(p_maps.options_menu)] = 'options_menu',
-  [Util.t(p_maps.help_menu)]    = 'help_menu',
+  [Util.t(maps.page_down)]    = 'page_down',
+  [Util.t(maps.page_up)]      = 'page_up',
+  [Util.t(maps.scroll_up)]    = 'scroll_up',
+  [Util.t(maps.scroll_down)]  = 'scroll_down',
+  [Util.t(maps.toggle_debug)] = 'toggle_debug',
+  [Util.t(maps.launch_wk)]    = 'launch_wk',
+  [Util.t(maps.options_menu)] = 'options_menu',
+  [Util.t(maps.help_menu)]    = 'help_menu',
 }
 
 local options_menu = function()
@@ -46,10 +46,10 @@ local actions = {
 -- check if input matches user_popup_mappings config
 local check_user_mappings = function(c, mode)
   local result = {}
-  for k, fn in pairs(pu_maps) do
+  for k, fn in pairs(maps_u) do
     if Util.t(k) == c then
       result = { key = k, mode = mode, user_mapping = true }
-      fn(state.keys:sub(1, -1 - #c), mode)
+      fn(string.sub(state.keys, 1, -1 - #c), mode)
       result = vim.tbl_deep_extend('force', result, window.hide() or {})
       break
     end
@@ -59,7 +59,7 @@ end
 
 local M = {}
 
-M.action_keys = vim.tbl_deep_extend('force', vim.tbl_values(p_maps), { '<esc>', '<bs>' })
+M.action_keys = vim.tbl_deep_extend('force', vim.tbl_values(maps), { '<esc>', '<bs>' })
 
 -- check if input matches local (internal) whichkey maps
 function M.check_internal(c, mode)

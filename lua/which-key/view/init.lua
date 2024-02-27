@@ -120,6 +120,7 @@ function M.start(keys, opts)
   state.mode = opts.mode or Util.get_mode()
   state.count = vim.api.nvim_get_vvar('count')
   state.reg = vim.api.nvim_get_vvar('register')
+  state.parent_buf = opts.buf or vim.api.nvim_get_current_buf()
 
   if string.find(vim.o.clipboard, 'unnamedplus') and state.reg == '+' then
     state.reg = '"'
@@ -156,8 +157,6 @@ function M.process_mappings(results, opts)
 end
 
 function M.on_keys(opts)
-  state.parent_buf = vim.api.nvim_get_current_buf()
-
   while true do
     M.read_pending()
 
@@ -165,7 +164,9 @@ function M.on_keys(opts)
     opts._op_icon = ''
 
     local results = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
-    Util.update_mode(results.mode_long or state.mode, results.op_i)
+    local without = require('which-key.util').without
+    -- if results.op_i then vim.dbglog('op_i', without(results, 'mappings')) end
+    Util.update_mode(results.mode_ex or results.mode, results.op_i)
     if view_utils.is_valid(state.buf, state.win) then
       local cursor = vim.api.nvim_win_get_cursor(state.win)
       state.cursor.history[results.mode .. '_' .. results.prefix_i] = cursor[1]
@@ -212,7 +213,8 @@ function M.on_keys(opts)
 
     -- M.set_cursor(state.cursor.row or 1)
 
-    opts._op_icon = results and results.mapping and results.mapping.group == true and '󰐕' or ''
+    opts._op_icon = results and results.mapping and results.mapping.group == true and '󰐕'
+      or ''
 
     view_utils.calculate_timings(opts)
     Logger.log_key(results, opts, state.internal)

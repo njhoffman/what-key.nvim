@@ -5,14 +5,14 @@ local state = require('which-key.view.state')
 
 local render_breadcrumbs = function(self)
   if not self.results.mapping then
-    Logger.debug('No mapping found for breadcrumbs: ' .. vim.inspect(self.results))
+    -- Logger.debug('No mapping found for breadcrumbs: ' .. vim.inspect(self.results))
     return
   end
 
   local win_width = vim.api.nvim_win_get_width(state.win)
 
   local prefix_i = self.results.prefix_i
-  local mode = self.results.mode_long or self.results.mapping.mode or self.results.mode
+  local mode = self.results.mode_ex or self.results.mapping.mode or self.results.mode
   local buf_path = Mapper.get_tree(mode, self.results.buf).tree:path(prefix_i)
   local path = Mapper.get_tree(mode).tree:path(prefix_i)
   local len = #self.results.mapping.keys.notation
@@ -49,7 +49,8 @@ local render_breadcrumbs = function(self)
   end
 
   if type(Config.options.user_hooks.breadcrumbs) == 'function' then
-    self.breadcrumbs = Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
+    self.breadcrumbs =
+      Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
   end
   return self.breadcrumbs
 end

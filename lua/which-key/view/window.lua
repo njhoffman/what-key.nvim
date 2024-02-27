@@ -7,7 +7,7 @@ local state = require('which-key.view.state')
 -- local current_window = vim.api.nvim_win_get_viewport(win_id)
 -- vim.api.nvim_win_set_viewport(win_id, current_window.topline + 1, current_window.botline, current_window.left_column, current_window.right_column)
 
-local scroll = function(up)
+local scroll = function(up, scrolloff)
   local delta = 1
   local height = vim.api.nvim_win_get_height(state.win)
   local cursor = vim.api.nvim_win_get_cursor(state.win)
@@ -15,7 +15,10 @@ local scroll = function(up)
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
+    cursor[1] = math.min(
+      cursor[1] + delta,
+      vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1
+    )
     cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
   end
   view_utils.set_cursor(cursor[1])
@@ -29,7 +32,10 @@ local page = function(up)
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
+    cursor[1] = math.min(
+      cursor[1] + delta,
+      vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1
+    )
     cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
   end
   view_utils.set_cursor(cursor[1])
@@ -145,13 +151,17 @@ function M.show()
         vim.cmd('VimadeUnfadeActive')
         vim.cmd('VimadeFadeLevel ' .. old_fadelevel)
       end
-      vim.api.nvim_exec_autocmds('ModeChanged', { pattern = state.mode .. ':' .. vim.api.nvim_get_mode().mode })
+      vim.api.nvim_exec_autocmds(
+        'ModeChanged',
+        { pattern = state.mode .. ':' .. vim.api.nvim_get_mode().mode }
+      )
     end,
     group = 'WhichKey',
   })
   if Config.options.vimade_fade then
     old_fadelevel = vim.api.nvim_get_var('vimade').fadelevel
-    local fadelevel = type(Config.options.vimade_fade) == 'number' and Config.options.vimade_fade or 0.75
+    local fadelevel = type(Config.options.vimade_fade) == 'number' and Config.options.vimade_fade
+      or 0.75
     vim.api.nvim_win_set_var(state.win, 'vimade_disabled', true)
     vim.cmd('VimadeFadeLevel ' .. fadelevel)
     vim.cmd('VimadeFadeActive')

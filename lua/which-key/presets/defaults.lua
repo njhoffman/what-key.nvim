@@ -3,9 +3,9 @@ local M = {}
 M.operators = {
   { 'no' },
   {
-    d = 'Delete',
-    c = 'Change',
-    y = 'Yank (copy)',
+    ['d'] = 'Delete',
+    ['c'] = 'Change',
+    ['y'] = 'Yank (copy)',
     ['g~'] = 'Toggle case',
     ['gu'] = 'Lowercase',
     ['gU'] = 'Uppercase',
@@ -13,7 +13,7 @@ M.operators = {
     ['<lt>'] = 'Indent left',
     ['zf'] = 'Create fold',
     ['!'] = 'Filter through external program',
-    ['v'] = 'Visual Character Mode',
+    -- ['v'] = 'Visual Character Mode',
     -- ["V"] = "Visual Line Mode",
   },
 }
@@ -47,8 +47,8 @@ M.motions = {
 M.text_objects = {
   { 'o' },
   {
-    a = { name = 'around' },
-    i = { name = 'inside' },
+    ['a'] = { name = 'around' },
+    ['i'] = { name = 'inside' },
     ['a"'] = [[double quoted string]],
     ["a'"] = [[single quoted string]],
     ['a('] = [[same as ab]],

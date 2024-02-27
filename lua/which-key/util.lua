@@ -197,11 +197,23 @@ function M.check_mode(mode, buf)
   return true
 end
 
-function M.update_mode(mode, op)
+function M.get_operator(op)
+  local standard_ops =
+    { 'd', 'y', 'c', '>', '<', '=', 'g~', 'gu', 'gU', '!', 'gq', 'g?', 'zf', 'g@' }
+  if not vim.tbl_contains(standard_ops, op) then
+    return 'g@', op
+  else
+    return op
+  end
+end
+
+function M.update_mode(mode, _op)
+  -- no, nov, noV, and no\x16.
   if mode then
-    vim.api.nvim_set_var('which_key_mode', mode)
-    if op and tostring(op) ~= '' then
-      vim.api.nvim_set_var('which_key_op', op)
+    local op, opfunc = M.get_operator(_op)
+    if opfunc and tostring(opfunc) ~= '' then
+      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_g@_' .. opfunc)
+    elseif op and tostring(op) ~= '' then
       vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
     else
       vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)

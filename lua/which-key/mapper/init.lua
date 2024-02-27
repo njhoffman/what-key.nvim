@@ -47,6 +47,8 @@ local wkargs = {
   'cmd',
   'name',
   'group',
+  'group_type',
+  'children',
   'preset',
   'cond',
 }
@@ -108,8 +110,8 @@ function M._parse(value, mappings, opts)
   if opts.plugin then
     opts.group = true
   end
+
   if opts.name then
-    -- remove + from group names
     opts.name = opts.name and opts.name:gsub('^%+', '')
     opts.group = true
   end
@@ -169,6 +171,7 @@ function M._parse(value, mappings, opts)
     error('Incorrect mapping ' .. vim.inspect(list))
   end
 
+  vim.dbglog('opts', opts)
   if opts.desc or opts.group then
     if type(opts.mode) == 'table' then
       for _, mode in pairs(opts.mode) do
@@ -231,13 +234,14 @@ function M.get_tree(mode, buf)
     mode = 'v'
   end
   Util.check_mode(mode, buf)
-  local idx = mode .. (buf or '')
+  local idx = mode .. (buf and tostring(buf) or '')
   if not state.mappings[idx] then
     state.mappings[idx] = { mode = mode, buf = buf, tree = Tree:new() }
   end
   return state.mappings[idx]
 end
 
+---Called from keys.update()
 ---@param mode string
 ---@param buf number
 function M.update_keymaps(mode, buf)
@@ -245,22 +249,22 @@ function M.update_keymaps(mode, buf)
   local keymaps = buf and vim.api.nvim_buf_get_keymap(buf, mode) or vim.api.nvim_get_keymap(mode)
   local tree = M.get_tree(mode, buf).tree
 
-  local function is_no_op(keymap)
-    return not keymap.callback and Util.t(keymap.rhs) == ''
+  local function is_nop(keymap)
+    return not keymap.callback and (keymap.rhs == '' or keymap.rhs:lower() == '<nop>')
   end
 
+  -- vim.dbglog(
+  --   mode .. ' ' .. (buf and buf or '') .. ' updating ' .. #vim.tbl_keys(keymaps),
+  --   ' mapper keymaps'
+  -- )
   for _, keymap in pairs(keymaps) do
     local is_group = false
-    local skip = Hooks.is_hook(keymap.lhs, keymap.rhs)
+    local skip = false
 
-    if is_no_op(keymap) then
+    if is_nop(keymap) then
       skip = true
-      if keymap.desc then
-        is_group = true
-      else
-        skip = true
-      end
     end
+    skip = Hooks.is_hook(keymap.lhs, keymap.rhs)
 
     -- Magic identifier for keygroups in regular keybindings
     if keymap.desc and keymap.desc:find(secret_group) then
@@ -277,26 +281,38 @@ function M.update_keymaps(mode, buf)
       end
     end
 
+    local keys = Util.parse_keys(keymap.lhs)
+    -- don't include Plug keymaps
+    if string.find(keys.notation[1]:lower(), '<plug>') then
+      skip = true
+    end
+
     if not skip then
+      local cmd_desc = keymap.rhs
+      local unparsed_cmds = {}
+      if type(keymap.callback) == 'function' and not keymap.rhs then
+        cmd_desc = mapper_utils.get_anon_function(debug.getinfo(keymap.callback))
+        if not string.find(cmd_desc, '%)$') then
+          table.insert(unparsed_cmds, { cmd_desc, keymap })
+          cmd_desc = '(anon)'
+        end
+      end
+
       local mapping = {
-        id = Util.t(keymap.lhs),
         prefix = keymap.lhs,
+        keys = keys,
         cmd = keymap.rhs,
         desc = keymap.desc,
-        keys = Util.parse_keys(keymap.lhs),
-        -- label = keymap.label or keymap.desc,
+        callback = keymap.callback,
       }
+      mapping.label = mapping.desc or cmd_desc or ''
       if is_group then
-        mapping = vim.tbl_extend('error', mapping, {
-          group = true,
-          label = mapping.label or mapping.desc,
-          name = mapping.desc,
-        })
+        mapping.group = true
+        mapping.group_type = not keymap.callback and not keymap.rhs and not cmd_desc and 'prefix'
+          or 'multi'
       end
-      -- don't include Plug keymaps
-      if mapping.keys.notation[1]:lower() ~= '<plug>' then
-        tree:add(mapping)
-      end
+
+      local node = tree:add(mapping)
     end
   end
 end
@@ -309,6 +325,7 @@ function M.get_mappings(mode, prefix_i, buf)
   ---@field buf number
   ---@field mapping? Mapping
   ---@field mappings VisualMapping[]
+  -- vim.dbglog('get mappings: ' .. mode .. ' ' .. prefix_i .. ' ' .. (buf or ''))
   local ret = { mapping = nil, mappings = {}, mode = mode, buf = buf, prefix_i = prefix_i }
 
   local prefix_len = #Util.parse_internal(prefix_i)
@@ -320,7 +337,11 @@ function M.get_mappings(mode, prefix_i, buf)
         ret.mapping = vim.tbl_deep_extend('force', {}, ret.mapping or {}, node.mapping)
       end
       for k, child in pairs(node.children) do
-        if child.mapping and child.mapping.label ~= 'which_key_ignore' and child.mapping.desc ~= 'which_key_ignore' then
+        if
+          child.mapping
+          and child.mapping.label ~= 'which_key_ignore'
+          and child.mapping.desc ~= 'which_key_ignore'
+        then
           ret.mappings[k] = vim.tbl_deep_extend('force', {}, ret.mappings[k] or {}, child.mapping)
         end
       end
@@ -341,32 +362,31 @@ function M.get_mappings(mode, prefix_i, buf)
     if Config.options.key_labels[value.key] then
       value.key = Config.options.key_labels[value.key]
     end
-    local skip = not value.label and Config.options.ignore_missing == true
+    local skip = false
+    if not value.label or value.desc then
+      if value.group and Config.options.ignore_unnamed_groups then
+        skip = true
+      elseif not value.group and Config.options.ignore_missing_desc == true then
+        skip = true
+      end
+    end
     if Util.t(value.key) == Util.t('<esc>') then
       skip = true
     end
     if not skip then
-      if value.group then
-        value.label = value.label or value.desc or '+prefix'
-        value.label = value.label:gsub('^%+', '')
-        value.label = Config.options.icons.group .. value.label
-      elseif not value.label then
-        value.label = value.desc or value.cmd or ''
-        for _, v in ipairs(Config.options.hidden) do
-          value.label = value.label:gsub(v, '')
-        end
+      if type(value.value) == 'string' then
+        value.value = vim.fn.strtrans(value.value) or value.value
       end
-      if value.value then
-        value.value = vim.fn.strtrans(value.value)
-      end
-
-      local submap = M.get_tree(mode).tree:get(value.prefix, nil, plugin_context)
-      local submap_buf = M.get_tree(mode, buf).tree:get(value.prefix, nil, plugin_context)
+      local submap = M.get_tree(mode).tree:get(value.keys.keys, nil, plugin_context)
+      local submap_buf = M.get_tree(mode, buf).tree:get(value.keys.keys, nil, plugin_context)
 
       local op_children = {}
       local op_i, op_n = operators.get_operator(value.prefix)
       if op_n == value.prefix then
-        local op_results = M.get_mappings(mode, value.prefix, buf)
+        value.op_i = op_i
+        value.group = true
+        value.group_type = 'operator'
+        local op_results = M.get_mappings(mode, op_i, buf)
         for _, mapping in pairs(op_results.mappings) do
           table.insert(op_children, mapping.prefix)
         end
@@ -380,7 +400,20 @@ function M.get_mappings(mode, prefix_i, buf)
         vim.tbl_keys(op_children)
       )
       if #vim.tbl_keys(children) > 0 then
+        value.group = true
+        value.group_type = 'multi'
         value.children = #vim.tbl_keys(children)
+      end
+
+      if value.group then
+        value.label = value.label or value.desc or value.cmd or '+prefix'
+        value.label = value.label:gsub('^%+', '')
+        value.label = Config.options.icons.group .. value.label
+      elseif not value.label then
+        value.label = value.desc or value.cmd or ''
+        for _, v in ipairs(Config.options.hidden) do
+          value.label = value.label:gsub(v, '')
+        end
       end
 
       -- remove duplicated keymap
@@ -418,6 +451,7 @@ function M.get_mappings(mode, prefix_i, buf)
   end)
   ret.mappings = tmp_mappings
 
+  -- vim.dbglog('returning  ' .. #ret.mappings .. ' mappings')
   return ret
 end
 return M

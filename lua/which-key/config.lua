@@ -115,6 +115,10 @@ local defaults = {
     buftypes = {},
     filetypes = {},
   },
+  sorting = {
+    priority = { 'order', 'group', 'children', 'name', 'desc', 'key' },
+    direction = 'desc', -- 'asc' or 'desc'
+  },
   mode_highlights = {}, -- separator, group, desc float value, border, mode
   user_hooks = {
     list_pre = nil,

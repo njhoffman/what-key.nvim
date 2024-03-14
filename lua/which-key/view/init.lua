@@ -183,15 +183,6 @@ function M.on_keys(opts)
       return
     end
 
-    table.sort(results.mappings, function(a, b)
-      if a.group ~= b.group then
-        return a.group
-      elseif type(a.children) ~= type(b.children) then
-        return type(a.children) == 'number'
-      else
-        return a.prefix < b.prefix
-      end
-    end)
     local layout = Layout:new(results)
 
     if view_utils.is_enabled(state.parent_buf) then

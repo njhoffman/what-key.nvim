@@ -32,7 +32,7 @@ end
 function M.update(buf)
   for k, tree in pairs(state.mappings) do
     if tree.buf and not vim.api.nvim_buf_is_valid(tree.buf) then
-      vim.dbglog('keys rm update: ' .. tree.buf)
+      -- vim.dbglog('keys rm update: ' .. tree.buf)
       -- remove group for invalid buffers
       state.mappings[k] = nil
     elseif not buf or not tree.buf or buf == tree.buf then

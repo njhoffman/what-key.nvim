@@ -171,7 +171,7 @@ function M._parse(value, mappings, opts)
     error('Incorrect mapping ' .. vim.inspect(list))
   end
 
-  vim.dbglog('opts', opts)
+  -- vim.dbglog('opts', opts)
   if opts.desc or opts.group then
     if type(opts.mode) == 'table' then
       for _, mode in pairs(opts.mode) do
@@ -370,6 +370,10 @@ function M.get_mappings(mode, prefix_i, buf)
         skip = true
       end
     end
+    if not value.label and value.desc then
+      value.label = value.desc
+    end
+
     if Util.t(value.key) == Util.t('<esc>') then
       skip = true
     end
@@ -431,22 +435,28 @@ function M.get_mappings(mode, prefix_i, buf)
     end
   end
 
-  -- Sort items, but not for plugins
   table.sort(tmp_mappings, function(a, b)
     if a.order and b.order then
       return a.order < b.order
-    end
-    if a.group == b.group then
+    elseif a.group ~= b.group then
+      return a.group
+    elseif type(a.children) ~= type(b.children) then
+      return type(a.children) == 'number'
+    elseif #a.key ~= #b.key then
+      return #a.key < #b.key
+    else
       local ak = (a.key or ''):lower()
       local bk = (b.key or ''):lower()
       local aw = ak:match('[a-z]') and 1 or 0
       local bw = bk:match('[a-z]') and 1 or 0
       if aw == bw then
-        return ak < bk
+        if ak == bk then
+          return b.key < a.key
+        else
+          return ak < bk
+        end
       end
       return aw < bw
-    else
-      return (a.group and 1 or 0) < (b.group and 1 or 0)
     end
   end)
   ret.mappings = tmp_mappings

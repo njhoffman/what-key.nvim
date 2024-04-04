@@ -29,7 +29,7 @@ M.log_key = function(results, opts, internal_key)
     .. (opts._load_window == true and ' ' or '  ')
     .. time_diff:sub(1, 8)
 
-  local mode = results.mode_long or map.mode or results.mode
+  local mode = results.mode or map.mode
   line = line .. ' (' .. mode .. ') ' .. (#mode == 2 and ' ' or '  ')
   line = line .. (type(results.prefix_i) == 'string' and vim.fn.keytrans(results.prefix_i) or '')
   line = line

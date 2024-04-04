@@ -112,28 +112,6 @@ function M.execute(prefix_i, mode, buf)
   end, 0)
 end
 
-function M.start(keys, opts)
-  opts = opts or {}
-  state.keys = keys or ''
-  state.history = {}
-  state.internal = {}
-  state.mode = opts.mode or Util.get_mode()
-  state.count = vim.api.nvim_get_vvar('count')
-  state.reg = vim.api.nvim_get_vvar('register')
-  state.parent_buf = opts.buf or vim.api.nvim_get_current_buf()
-
-  if string.find(vim.o.clipboard, 'unnamedplus') and state.reg == '+' then
-    state.reg = '"'
-  end
-
-  if string.find(vim.o.clipboard, 'unnamed') and state.reg == '*' then
-    state.reg = '"'
-  end
-
-  view_utils.show_cursor()
-  M.on_keys(opts)
-end
-
 function M.process_mappings(results, opts)
   if vim.tbl_isempty(results.mappings) and vim.tbl_isempty(state.internal) then
     window.hide()
@@ -156,7 +134,34 @@ function M.process_mappings(results, opts)
   return true
 end
 
-function M.on_keys(opts)
+function M.init_state(keys, opts)
+  state.keys = keys or ''
+  state.history = {}
+  state.internal = {}
+  state.mode = opts.mode or Util.get_mode()
+  state.count = vim.api.nvim_get_vvar('count')
+  state.reg = vim.api.nvim_get_vvar('register')
+  state.parent_buf = opts.buf or vim.api.nvim_get_current_buf()
+  if opts.background ~= nil then
+    state.background = not state.background
+    Logger.info('Background mode ' .. (state.background and 'enabled' or 'disabled'))
+  end
+
+  if string.find(vim.o.clipboard, 'unnamedplus') and state.reg == '+' then
+    state.reg = '"'
+  end
+
+  if string.find(vim.o.clipboard, 'unnamed') and state.reg == '*' then
+    state.reg = '"'
+  end
+end
+
+function M.on_keys(keys, opts)
+  opts = opts or {}
+  M.init_state(keys, opts)
+
+  view_utils.show_cursor()
+
   while true do
     M.read_pending()
 
@@ -164,9 +169,12 @@ function M.on_keys(opts)
     opts._op_icon = ''
 
     local results = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
-    local without = require('which-key.util').without
-    -- if results.op_i then vim.dbglog('op_i', without(results, 'mappings')) end
-    Util.update_mode(results.mode_ex or results.mode, results.op_i)
+    -- if results.op_i then
+    vim.dbglog(require('which-key.util').without(results, 'mappings'))
+    -- end
+
+    Util.update_mode(results.mode, results.op_i)
+
     if view_utils.is_valid(state.buf, state.win) then
       local cursor = vim.api.nvim_win_get_cursor(state.win)
       state.cursor.history[results.mode .. '_' .. results.prefix_i] = cursor[1]
@@ -183,21 +191,18 @@ function M.on_keys(opts)
       return
     end
 
-    local layout = Layout:new(results)
-
     if view_utils.is_enabled(state.parent_buf) then
       if not view_utils.is_valid(state.buf, state.win) then
         opts._load_window = true
         window.show()
       end
 
-      -- if state.debug.enabled and not view_utils.is_valid(state.debug.buf, state.debug.win) then
-      --   M.show_debug()
-      -- end
+      local layout = Layout:new(results)
 
       M.render(layout:make_list(layout))
       M.render_footer(layout:make_breadcrumbs())
       M.render_title(layout:make_title())
+      --   M.show_debug()
     end
 
     vim.cmd([[redraw]])
@@ -206,7 +211,6 @@ function M.on_keys(opts)
 
     opts._op_icon = results and results.mapping and results.mapping.group == true and '󰐕'
       or ''
-
     view_utils.calculate_timings(opts)
     Logger.log_key(results, opts, state.internal)
 

@@ -208,6 +208,7 @@ function M.get_operator(op)
 end
 
 function M.update_mode(mode, _op)
+  -- help i_esc
   -- no, nov, noV, and no\x16.
   if mode then
     local op, opfunc = M.get_operator(_op)

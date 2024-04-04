@@ -1,5 +1,15 @@
 local M = {}
 
+M.lookup = function(...)
+  local results = {}
+  for _, t in ipairs({ ... }) do
+    for _, v in ipairs(t) do
+      results[v] = v
+    end
+  end
+  return results
+end
+
 M.get_anon_function = function(info)
   -- info.lastlinedefined, namewhat, source, nparams, short_src, currentline, func, what, nups,
   -- linedefined

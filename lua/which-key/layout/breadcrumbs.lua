@@ -12,7 +12,7 @@ local render_breadcrumbs = function(self)
   local win_width = vim.api.nvim_win_get_width(state.win)
 
   local prefix_i = self.results.prefix_i
-  local mode = self.results.mode_ex or self.results.mapping.mode or self.results.mode
+  local mode = self.results.mode or self.results.mapping.mode
   local buf_path = Mapper.get_tree(mode, self.results.buf).tree:path(prefix_i)
   local path = Mapper.get_tree(mode).tree:path(prefix_i)
   local len = #self.results.mapping.keys.notation

@@ -24,26 +24,42 @@
 ---@field internal string[]
 ---@field notation string[]
 
----@class MappingOptions
+---@class MappingOptions basic attributes of keymap if it exists
 ---@field noremap boolean
 ---@field silent boolean
 ---@field nowait boolean
 ---@field expr boolean
-
----@class Mapping
----@field buf number
----@field group boolean
----@field label string
 ---@field desc string
----@field prefix string
----@field cmd string
+
+---@class MappingMetadata which-key specific fields not a part of regular keymap
+---@field label? string manually specify the description output for the key
+---@field name? string assigned to label and indicates this is a virtual grouping prefix
+---@field plugin? string plugin associated with this keymap
+---@field category? string category associated with this keymap
+---
+---@class Mapping
+---@field meta MappingMetadata
 ---@field opts MappingOptions
 ---@field keys KeyCodes
+---@field buf number
+---@field group string indicates children exists: "operator, multi, prefix"
+---@field label string the formatted description to display
+---@field desc string
+---@field prefix string
+---@field cmd string if the keymap rhs is a string
+---@field callback fun()|nil if the keymap rhs is a function
 ---@field mode? string
----@field callback fun()|nil
----@field preset string
+---@field preset? string name of loaded preset that contains lhs
 ---@field plugin string
 ---@field fn fun()
+
+---@class MappingGroup
+---@field mapping? Mapping
+---@field mappings VisualMapping[]
+---@field mode string
+---@field prefix_i string
+---@field prefix_n string
+---@field buf number
 
 ---@class MappingTree
 ---@field mode string

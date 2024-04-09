@@ -141,7 +141,7 @@ function M.parse_keys(keystr)
   end
 
   local ret = {
-    keys = keys,
+    raw = keys,
     internal = internal,
     notation = notation,
   }
@@ -200,7 +200,9 @@ end
 function M.get_operator(op)
   local standard_ops =
     { 'd', 'y', 'c', '>', '<', '=', 'g~', 'gu', 'gU', '!', 'gq', 'g?', 'zf', 'g@' }
-  if not vim.tbl_contains(standard_ops, op) then
+  if op == nil or op == '' then
+    return op
+  elseif not vim.tbl_contains(standard_ops, op) then
     return 'g@', op
   else
     return op
@@ -213,8 +215,10 @@ function M.update_mode(mode, _op)
   if mode then
     local op, opfunc = M.get_operator(_op)
     if opfunc and tostring(opfunc) ~= '' then
+      mode = mode == 'n' and 'no' or mode
       vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_g@_' .. opfunc)
     elseif op and tostring(op) ~= '' then
+      mode = mode == 'n' and 'no' or mode
       vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
     else
       vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)

@@ -1,7 +1,7 @@
 local M = {}
 
 M.operators = {
-  { 'no' },
+  { 'n' },
   {
     ['d'] = 'Delete',
     ['c'] = 'Change',

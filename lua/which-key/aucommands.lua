@@ -70,6 +70,10 @@ M.schedule_load = function()
 end
 
 M.setup = function()
+  local buf = vim.api.nvim_get_current_buf()
+  init_buffer_mappings(buf)
+  load_buffer_mappings(buf)
+
   vim.api.nvim_create_autocmd({ 'BufReadPre' }, {
     group = group,
     callback = get_buf(init_buffer_mappings),

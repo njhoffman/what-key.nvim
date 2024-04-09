@@ -8,12 +8,12 @@ end
 M.key_counts = function()
   local hooks = require('which-key.keys.hooks')
   local counts = require('which-key.mapper').get_counts() or {}
-  local line = '(' .. counts.ok or '--' .. ')'
+  local line = counts.ok or '--'
   local modes = { 'n', 'v', 'i', 'o', 'c', 't' }
   for _, mode in ipairs(modes) do
     local count = counts['ok_' .. mode] or 0
     if line == '' then
-      line = ' (' .. mode .. ':' .. count
+      line = mode .. ':' .. count
     else
       line = line .. ' ' .. mode .. ':' .. count
     end

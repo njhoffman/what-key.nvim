@@ -10,13 +10,13 @@ local M = {}
 function M.register(mappings, opts)
   opts = opts or {}
 
-  mappings = Mapper.parse(mappings, opts)
+  local parsed_maps = Mapper.parse(mappings, opts)
 
   -- always create the root node for the mode, even if there's no mappings,
   -- to ensure we have at least a trigger hooked for non documented keymaps
   local modes = {}
 
-  for _, mapping in pairs(mappings) do
+  for _, mapping in pairs(parsed_maps) do
     if not modes[mapping.mode] then
       modes[mapping.mode] = true
       Mapper.get_tree(mapping.mode)
@@ -47,25 +47,17 @@ function M.update(buf)
 end
 
 function M.setup()
+  for _, t in pairs(Config.options.triggers_nowait) do
+    state.nowait[t] = true
+  end
+
   local op_mappings = {}
   for op, label in pairs(Config.options.operators) do
     state.operators[op] = true
     op_mappings[op] = { name = label }
   end
-  for _, t in pairs(Config.options.triggers_nowait) do
-    state.nowait[t] = true
-  end
 
-  -- M.register(op_mappings, { mode = 'n', preset = 'operators' })
   M.register(op_mappings, { mode = 'v', preset = 'operators' })
-  -- M.register({
-  --   i = { name = 'inside' },
-  --   a = { name = 'around' },
-  -- }, { mode = 'n', preset = 'text_objects' })
-  M.register({
-    i = { name = 'inside' },
-    a = { name = 'around' },
-  }, { mode = 'v', preset = 'text_objects' })
 
   for mode, blacklist in pairs(Config.options.triggers_blacklist) do
     for _, prefix_n in ipairs(blacklist) do

@@ -12,13 +12,13 @@ local Text = require('which-key.text')
 local Layout = {}
 Layout.__index = Layout
 
----@param mappings MappingGroup
+---@param map_group MappingGroup
 ---@param options? Options
-function Layout:new(mappings, options)
+function Layout:new(map_group, options)
   local this = {
-    results = mappings,
-    mapping = mappings.mapping,
-    items = mappings.mappings,
+    results = map_group,
+    mapping = map_group.mapping,
+    items = map_group.children,
     text = Text:new(),
     breadcrumbs = Text:new(),
     title = Text:new(),

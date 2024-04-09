@@ -22,6 +22,7 @@ M.log_key = function(results, opts, internal_key)
   -- convert to seconds
   local time_diff = vim.fn.reltime(opts._start_time)
   time_diff = vim.fn.reltimestr(time_diff) -- * 1000
+
   local map = results.mapping or {}
   local line = ''
   line = line
@@ -32,9 +33,11 @@ M.log_key = function(results, opts, internal_key)
   local mode = results.mode or map.mode
   line = line .. ' (' .. mode .. ') ' .. (#mode == 2 and ' ' or '  ')
   line = line .. (type(results.prefix_i) == 'string' and vim.fn.keytrans(results.prefix_i) or '')
+
+  local child_count = results.children and #results.children or 0
   line = line
-    .. string.rep(' ', 9 - #(results.prefix_i or '') - #tostring(#results.mappings))
-    .. #results.mappings
+    .. string.rep(' ', 9 - #(results.prefix_i or '') - #tostring(child_count))
+    .. child_count
     .. '   '
   M.logger.debug(line)
 end

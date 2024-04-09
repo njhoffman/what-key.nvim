@@ -2,39 +2,65 @@ local Logger = require('which-key.logger')
 local Util = require('which-key.util')
 local mapper_utils = require('which-key.mapper.utils')
 
--- keymap fields that will be removed from base table and saved to opts fields
-local mapargs = {
+-- "<buffer>", "<expr>", "<nowait>", "<silent>", "<script>",  "<unique>"
+-- "desc" human-readable description
+-- "callback" if keymap.set rhs is a function or included in nvim_set_keymap option
+-- "replace_keycodes" (termcodes) keymap.set defaults to `true` if "expr" is `true`
+
+-- keymap fields that will be removed from base table and saved to mapping.opts field
+local keymap_fields = {
   'buffer',
   'callback',
   'desc',
   'expr',
   'noremap',
   'nowait',
+  'replace_keycodes', -- TODO: add config setting for default value
   'script',
   'silent',
   'unique',
-  'replace_keycodes', -- TODO: add config setting for default value
 }
 
--- whichkey specific metadata fields
-local wkargs = {
+-- whichkey specific fields when registering keymaps and saved to mapping.meta field
+local register_fields = {
   'category',
-  'children',
-  'cmd',
   'cond',
-  'group',
-  'mode',
   'name',
   'plugin',
-  'prefix',
+  -- 'prefix', TODO: mapping.prefix to mapping.keys.raw
   'preset',
   'remap',
 }
 
-local args = mapper_utils.lookup(mapargs, wkargs)
+-- fields for for the mapgroup.mapping item
+local mapping_fields = {
+  'child_count',
+  'cmd',
+  'group',
+  'keys',
+  'name',
+  'meta',
+  'mode',
+  'opts',
+  'preset',
+  -- TODO: mapping.prefix to mapping.keys.raw
+  'prefix',
+  'type',
+}
 
---
-local transargs = mapper_utils.lookup({
+-- fields for mapgroup
+local mapgroup_fields = {
+  'buf',
+  'children',
+  'mapping',
+  'mode',
+  'prefix_n',
+  'prefix_i',
+  'op_i',
+  'op_prefix_i',
+}
+
+local child_fields = mapper_utils.lookup({
   'buffer',
   'expr',
   'mode',
@@ -48,58 +74,91 @@ local transargs = mapper_utils.lookup({
   'unique',
 })
 
+-- child_count = 14,
+-- group = "multi",
+-- key = "t",
+-- keys = {
+--     internal = {
+--         [1] = "g",
+--         [2] = "t"
+--     },
+--     notation = {
+--         [1] = "g",
+--         [2] = "t"
+--     },
+--     raw = "gt"
+-- },
+-- label = "+text-case ï ",
+-- meta = {
+--     name = "text-case ï "
+-- },
+-- mode = "n",
+-- opts = {
+--     noremap = true,
+--     silent = true
+-- },
+-- prefix = "gt"
+
+local args = mapper_utils.lookup(keymap_fields, mapping_fields)
+
 local M = {}
 
 function M._child_opts(opts)
   local child_opts = {}
   for k, v in pairs(opts) do
-    if transargs[k] then
+    if child_fields[k] then
       child_opts[k] = v
     end
   end
   return child_opts
 end
 
-function M._process(value, opts)
-  local list = {}
-  local children = {}
-  for k, v in pairs(value) do
-    if type(k) == 'number' then
-      if type(v) == 'table' then
+-- handle different patterns of register mappings
+-- register({ f = { name = "file", f = { "cmd", "Find File" } } }, { prefix = "<leader>" })
+-- register({ ['<leader>'] = { f = { name = '+file', f = { 'cmd', 'Find File' } } } } )
+-- register({ ['<leader>f'] = { name = '+file', f = { 'cmd', 'Find File' } } } )
+
+function M._process(maps, reg_opts)
+  local list, children = {}, {}
+  for key, val in pairs(maps) do
+    if type(key) == 'number' then
+      if type(val) == 'table' then
         -- nested child, without key
-        table.insert(children, v)
+        table.insert(children, val)
       else
         -- list value
-        table.insert(list, v)
+        table.insert(list, val)
       end
-    elseif args[k] then
+    elseif args[key] then
       -- option
-      opts[k] = v
+      reg_opts[key] = val
     else
       -- nested child, with key
-      children[k] = v
+      children[key] = val
     end
   end
   return list, children
 end
 
-function M._try_parse(value, mappings, opts)
-  local ok, err = pcall(M._parse, value, mappings, opts)
-  if not ok then
-    Logger.error(err)
+-- build new mapping objects
+function M._build_maps(maps, opts, new_maps)
+  -- don't add if cond is defined and not true
+  if opts.cond ~= nil then
+    if type(opts.cond) == 'function' then
+      if not opts.cond() then
+        return
+      end
+    elseif not opts.cond then
+      return
+    end
   end
-end
 
-function M._parse(value, mappings, opts)
-  if type(value) ~= 'table' then
-    value = { value }
-  end
-
-  local list, children = M._process(value, opts)
+  -- separate children for later recursive handling
+  local list, children = M._process(maps, opts)
 
   if opts.name then
     opts.name = opts.name and opts.name:gsub('^%+', '')
-    opts.group = 'prefix'
+    opts.group = opts.group or 'prefix'
   end
 
   -- fix remap
@@ -113,30 +172,10 @@ function M._parse(value, mappings, opts)
     opts.buffer = vim.api.nvim_get_current_buf()
   end
 
-  -- don't add if cond is defined and not true
-  if opts.cond ~= nil then
-    if type(opts.cond) == 'function' then
-      if not opts.cond() then
-        return
-      end
-    elseif not opts.cond then
-      return
-    end
-  end
-
-  -- process any array child mappings
-  for k, v in pairs(children) do
-    local child_opts = M._child_opts(opts)
-    if type(k) == 'string' then
-      child_opts.prefix = (child_opts.prefix or '') .. k
-    end
-    M._try_parse(v, mappings, child_opts)
-  end
-
   -- { desc }
   if #list == 1 then
     if type(list[1]) ~= 'string' then
-      error('Invalid mapping for ' .. vim.inspect({ value = value, opts = opts }))
+      error('Invalid mapping for ' .. vim.inspect({ value = maps, opts = opts }))
     end
     opts.desc = list[1]
   -- { cmd, desc }
@@ -155,22 +194,31 @@ function M._parse(value, mappings, opts)
     error('Incorrect mapping ' .. vim.inspect(list))
   end
 
-  -- vim.dbglog('opts', opts)
   if opts.desc or opts.group then
     if type(opts.mode) == 'table' then
       for _, mode in pairs(opts.mode) do
         local mode_opts = vim.deepcopy(opts)
         mode_opts.mode = mode
-        table.insert(mappings, mode_opts)
+        table.insert(new_maps, mode_opts)
       end
     else
-      table.insert(mappings, opts)
+      table.insert(new_maps, opts)
     end
+  end
+
+  -- process any array child mappings
+  for k, v in pairs(children) do
+    local child_opts = M._child_opts(opts)
+    if type(k) == 'string' then
+      child_opts.prefix = (child_opts.prefix or '') .. k
+    end
+    M._try_build_maps(v, child_opts, new_maps)
   end
 end
 
+-- parse new mapping object
 ---@return Mapping
-function M._to_mapping(mapping)
+function M._parse_mapping(mapping)
   mapping.silent = mapping.silent ~= false
   mapping.noremap = mapping.noremap ~= false
   if mapping.cmd and mapping.cmd:lower():find('^<plug>') then
@@ -180,27 +228,50 @@ function M._to_mapping(mapping)
   mapping.buf = mapping.buffer
   mapping.buffer = nil
 
-  mapping.mode = mapping.mode or 'n'
-  mapping.label = mapping.label or mapping.name or mapping.desc
+  -- mapping.mode = mapping.mode or 'n'
+  mapping.label = mapping.name or mapping.label or mapping.desc
   mapping.keys = Util.parse_keys(mapping.prefix or '')
 
   local opts = {}
-  for _, o in ipairs(mapargs) do
+  for _, o in ipairs(keymap_fields) do
     opts[o] = mapping[o]
     mapping[o] = nil
   end
   mapping.opts = opts
+
+  local meta = {}
+  for _, o in ipairs(register_fields) do
+    meta[o] = mapping[o]
+    mapping[o] = nil
+  end
+  mapping.meta = meta
+
   return mapping
 end
 
+function M._try_build_maps(reg_maps, reg_opts, new_maps)
+  reg_maps = type(reg_maps) ~= 'table' and { reg_maps } or reg_maps
+  reg_opts = reg_opts or {}
+
+  local ok, err = pcall(M._build_maps, reg_maps, reg_opts, new_maps)
+  if not ok then
+    Logger.error(err)
+  end
+  return new_maps
+end
+
+---@param reg_maps string[] table of mappings called with register command
+---@param reg_opts string[] table of whichkey register options
 ---@return Mapping[]
-function M.parse(mappings, opts)
-  opts = opts or {}
-  local ret = {}
-  M._try_parse(mappings, ret, opts)
-  return vim.tbl_map(function(m)
-    return M._to_mapping(m)
-  end, ret)
+function M.parse(reg_maps, reg_opts)
+  local new_maps = {}
+  M._try_build_maps(reg_maps, reg_opts, new_maps)
+
+  local parsed_maps = vim.tbl_map(function(map)
+    return M._parse_mapping(map)
+  end, new_maps)
+
+  return parsed_maps
 end
 
 return M

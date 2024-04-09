@@ -2,7 +2,7 @@
 
 --# selene: allow(unused_variable)
 
----@class Keymap
+---@class Keymap the native fields of neovim keymap objects
 ---@field rhs string
 ---@field lhs string
 ---@field buffer number
@@ -19,30 +19,31 @@
 ---@field desc string
 ---@field label string
 
----@class KeyCodes
+---@class KeyCodes parsed from Keymap.lhs
 ---@field keys string
 ---@field internal string[]
 ---@field notation string[]
 
----@class MappingOptions basic attributes of keymap if it exists
+---@class MappingRegister which-key specific mapping fields from the register command
+---@field label? string manually specify the description output for the key
+---@field name? string assigned to label and indicates this is a virtual grouping prefix
+---@field plugin? string plugin associated with this keymap
+---@field category? string category associated with this keymap
+
+---@class MappingOptions basic attributes from parsing keymap options
 ---@field noremap boolean
 ---@field silent boolean
 ---@field nowait boolean
 ---@field expr boolean
 ---@field desc string
 
----@class MappingMetadata which-key specific fields not a part of regular keymap
----@field label? string manually specify the description output for the key
----@field name? string assigned to label and indicates this is a virtual grouping prefix
----@field plugin? string plugin associated with this keymap
----@field category? string category associated with this keymap
----
----@class Mapping
----@field meta MappingMetadata
+---@class Mapping the mapping object built from Keymap from the above classes
+---@field meta MappingRegister
 ---@field opts MappingOptions
 ---@field keys KeyCodes
 ---@field buf number
----@field group string indicates children exists: "operator, multi, prefix"
+---@field group string indicates child maps exists: "operator, multi, prefix"
+---@field child_count number total number of child mappings
 ---@field label string the formatted description to display
 ---@field desc string
 ---@field prefix string
@@ -53,9 +54,14 @@
 ---@field plugin string
 ---@field fn fun()
 
+---@class VisualMapping : Mapping
+---@field key string
+---@field highlights table
+---@field value string
+
 ---@class MappingGroup
 ---@field mapping? Mapping
----@field mappings VisualMapping[]
+---@field children VisualMapping[]
 ---@field mode string
 ---@field prefix_i string
 ---@field prefix_n string
@@ -65,27 +71,3 @@
 ---@field mode string
 ---@field buf? number
 ---@field tree Tree
-
----@class VisualMapping : Mapping
----@field key string
----@field highlights table
----@field value string
-
----@class PluginItem
----@field key string
----@field label string
----@field value string
----@field cmd string
----@field highlights table
-
----@class PluginAction
----@field trigger string
----@field mode string
----@field label? string
----@field delay? boolean
-
----@class Plugin
----@field name string
----@field actions PluginAction[]
----@field run fun(trigger:string, mode:string, buf:number):PluginItem[]
----@field setup fun(wk, opts, Options)

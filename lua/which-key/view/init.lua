@@ -112,8 +112,8 @@ function M.execute(prefix_i, mode, buf)
   end, 0)
 end
 
-function M.process_mappings(results, opts)
-  if vim.tbl_isempty(results.mappings) and vim.tbl_isempty(state.internal) then
+function M.handle_mapping(results, opts)
+  if vim.tbl_isempty(results.children) and vim.tbl_isempty(state.internal) then
     window.hide()
     if results.mapping and not results.mapping.group then
       --- check for an exact match, feedkeys with remap
@@ -136,7 +136,7 @@ end
 
 function M.init_state(keys, opts)
   state.keys = keys or ''
-  state.history = {}
+  -- state.history = {}
   state.internal = {}
   state.mode = opts.mode or Util.get_mode()
   state.count = vim.api.nvim_get_vvar('count')
@@ -168,26 +168,20 @@ function M.on_keys(keys, opts)
     opts._load_window = false
     opts._op_icon = ''
 
-    local results = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
-    -- if results.op_i then
-    vim.dbglog(require('which-key.util').without(results, 'mappings'))
-    -- end
+    local map_group = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
 
-    Util.update_mode(results.mode, results.op_i)
+    vim.dbglog(Util.without(map_group, 'children'))
+    Util.update_mode(map_group.mode, map_group.op_i)
 
     if view_utils.is_valid(state.buf, state.win) then
       local cursor = vim.api.nvim_win_get_cursor(state.win)
-      state.cursor.history[results.mode .. '_' .. results.prefix_i] = cursor[1]
+      state.cursor.history[map_group.mode .. '_' .. map_group.prefix_i] = cursor[1]
     end
 
-    local history = Util.without(results, 'mappings')
-    history.children_n = Util.count(results.mappings)
-    table.insert(state.history, history)
-
     -- if no child mappings log and quit
-    if not M.process_mappings(results, opts) then
+    if not M.handle_mapping(map_group, opts) then
       view_utils.calculate_timings(opts)
-      Logger.log_key(results, opts, state.internal)
+      Logger.log_key(map_group, opts, state.internal)
       return
     end
 
@@ -197,7 +191,7 @@ function M.on_keys(keys, opts)
         window.show()
       end
 
-      local layout = Layout:new(results)
+      local layout = Layout:new(map_group)
 
       M.render(layout:make_list(layout))
       M.render_footer(layout:make_breadcrumbs())
@@ -208,11 +202,10 @@ function M.on_keys(keys, opts)
     vim.cmd([[redraw]])
 
     -- M.set_cursor(state.cursor.row or 1)
-
-    opts._op_icon = results and results.mapping and results.mapping.group == true and '󰐕'
+    opts._op_icon = map_group and map_group.mapping and map_group.mapping.group == true and '󰐕'
       or ''
     view_utils.calculate_timings(opts)
-    Logger.log_key(results, opts, state.internal)
+    Logger.log_key(map_group, opts, state.internal)
 
     -- pause here until another character entered (while panel open)
     local c = view_utils.getchar()
@@ -221,6 +214,7 @@ function M.on_keys(keys, opts)
 
     state.internal = actions.check_internal(c, opts.mode)
 
+    -- if not exit code append character to keys and reset cursor to top
     if state.internal and state.internal.exit == true then
       break
     elseif vim.tbl_isempty(state.internal) then

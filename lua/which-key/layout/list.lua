@@ -130,7 +130,8 @@ local render_list = function(self)
       label = vim.fn.strcharpart(label, 0, max_label_width - 2) .. '…'
     end
 
-    local children = item.children and tonumber(item.children) or nil
+    -- local children = item.children and tonumber(item.children) or nil
+    local children = item.child_count or nil
     local hl = item.op_i and 'Operator' or item.group and 'Group' or 'Desc'
     if children then
       hl = item.op_i and 'Operator' or item.group and 'Group' or 'Multi'

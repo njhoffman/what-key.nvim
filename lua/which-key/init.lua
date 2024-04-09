@@ -60,8 +60,6 @@ function M.load(vim_enter)
   require('which-key.colors').setup()
   aucommands.setup()
   -- require('which-key.onkey').setup()
-  Keys.register({}, { prefix = '<leader>', mode = 'n' })
-  Keys.register({}, { prefix = '<leader>', mode = 'v' })
   Keys.setup()
   aucommands.register_queue(true)
   state.loaded = true

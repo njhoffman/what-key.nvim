@@ -4,6 +4,8 @@ local modules = {
   require('which-key.logger.mods.format'),
 }
 
+--  󰞷 󰡱 ∅ 󰐕 
+
 local debug_flag = true
 local get_logger = function(level)
   local _logger = require('logger').init('whichkey')

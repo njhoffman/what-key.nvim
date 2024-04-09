@@ -195,7 +195,7 @@ function M.back()
     state.keys = node.prefix_i
     state.cursor.row = state.cursor.history[state.mode .. '_' .. node.prefix_i] or 1
   end
-  state.history = table.remove(state.history, #state.history)
+  -- state.history = table.remove(state.history, #state.history)
 end
 
 return M

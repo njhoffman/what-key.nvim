@@ -22,9 +22,10 @@ end
 ---@param mode string
 ---@param buf? buffer
 function M.get_tree(mode, buf)
-  mode = mode:sub(1, 1)
   if mode == 's' or mode == 'x' then
     mode = 'v'
+  elseif mode == 'no' then
+    mode = 'n'
   end
   Util.check_mode(mode, buf)
   local idx = mode .. (buf and tostring(buf) or '')
@@ -95,7 +96,7 @@ function M.update_keymaps(mode, buf)
         cmd = keymap.rhs,
         callback = keymap.callback,
         mode = keymap.mode,
-        desc = M.get_desc(keymap),
+        label = M.get_desc(keymap),
       }
 
       if is_group then
@@ -111,7 +112,8 @@ end
 function M.get_map_group(context, prefix_i)
   local map_group = {
     mapping = nil,
-    mappings = {}, -- change to children
+    -- mappings = {}, -- change to children
+    children = {}, -- next level of mappings that belong to this keymap
     mode = context.mode, -- calculated mode from initial mode or mappings
     buf = context.buf, -- source buffer where keys were entered
     prefix_i = prefix_i, -- raw keys entered
@@ -126,8 +128,8 @@ function M.get_map_group(context, prefix_i)
       end
       for k, child in pairs(node.children) do
         if child.mapping and child.mapping.label ~= 'which_key_ignore' then
-          map_group.mappings[k] =
-            vim.tbl_deep_extend('force', {}, map_group.mappings[k] or {}, child.mapping)
+          map_group.children[k] =
+            vim.tbl_deep_extend('force', {}, map_group.children[k] or {}, child.mapping)
         end
       end
     end
@@ -142,6 +144,57 @@ function M.get_map_group(context, prefix_i)
   return map_group
 end
 
+function M.format_child(mapping, mode, context, buf)
+  if type(mapping.value) == 'string' then
+    mapping.value = vim.fn.strtrans(mapping.value) or mapping.value
+  end
+
+  local submap = M.get_tree(mode).tree:get(mapping.keys.raw, nil, context)
+  local submap_buf = M.get_tree(mode, buf).tree:get(mapping.keys.raw, nil, context)
+
+  -- check if child mapping is an operator
+  local op_children = {}
+  local op_i, op_n, op_desc = operators.get_operator(mapping.prefix)
+  if op_n == mapping.prefix then
+    mapping.type = 'operator'
+    mapping.op_i = op_i
+    mapping.label = op_desc
+    local op_results = M.get_mappings(mode, op_i, buf)
+    for _, mapping in pairs(op_results.children) do
+      table.insert(op_children, mapping.prefix)
+    end
+  end
+
+  -- calculate total number of children this mapping has
+  local children = vim.tbl_deep_extend(
+    'force',
+    {},
+    vim.tbl_keys(submap and submap.children or {}),
+    vim.tbl_keys(submap_buf and submap_buf.children or {}),
+    vim.tbl_keys(op_children)
+  )
+
+  if #vim.tbl_keys(children) > 0 then
+    mapping.group = mapping.group or 'multi'
+    mapping.child_count = #vim.tbl_keys(children)
+  end
+
+  -- final description label formatting
+  local label = mapping.label --[[ mapping.opts.desc or ]]
+    or mapping.cmd
+    or nil
+  if mapping.group then
+    mapping.label = label or '+prefix'
+    mapping.label = mapping.label:gsub('^%+', '')
+    mapping.label = Config.options.icons.group .. mapping.label
+  else
+    mapping.label = label or ''
+    for _, v in ipairs(Config.options.hidden) do
+      mapping.label = mapping.label:gsub(v, '')
+    end
+  end
+end
+
 -- called from user command, recursively, and from operators
 function M.get_mappings(mode, prefix_i, buf)
   local context = { buf = buf, mode = mode }
@@ -151,7 +204,7 @@ function M.get_mappings(mode, prefix_i, buf)
 
   -- Format keys, labels and determine if skipping based on configuration
   local tmp_mappings = {}
-  for _, mapping in pairs(map_group.mappings) do
+  for _, mapping in pairs(map_group.children) do
     mapping.key = mapping.keys.notation[prefix_len + 1]
     if Config.options.key_labels[mapping.key] then
       mapping.key = Config.options.key_labels[mapping.key]
@@ -167,54 +220,7 @@ function M.get_mappings(mode, prefix_i, buf)
     end
 
     if not skip then
-      if type(mapping.value) == 'string' then
-        mapping.value = vim.fn.strtrans(mapping.value) or mapping.value
-      end
-
-      -- check if mapping is an operator
-      local op_children = {}
-      local op_i, op_n, op_desc = operators.get_operator(mapping.prefix)
-      if op_n == mapping.prefix then
-        mapping.op_i = op_i
-        mapping.group = 'operator'
-        mapping.label = op_desc
-        local op_results = M.get_mappings(mode, op_i, buf)
-        for _, mapping in pairs(op_results.mappings) do
-          table.insert(op_children, mapping.prefix)
-        end
-      end
-
-      local submap = M.get_tree(mode).tree:get(mapping.keys.keys, nil, context)
-      local submap_buf = M.get_tree(mode, buf).tree:get(mapping.keys.keys, nil, context)
-
-      -- calculate total number of children this mapping has
-      local children = vim.tbl_deep_extend(
-        'force',
-        {},
-        vim.tbl_keys(submap and submap.children or {}),
-        vim.tbl_keys(submap_buf and submap_buf.children or {}),
-        vim.tbl_keys(op_children)
-      )
-
-      if #vim.tbl_keys(children) > 0 then
-        mapping.group = 'multi'
-        mapping.children = #vim.tbl_keys(children)
-      end
-
-      -- final description label formatting
-      local label = mapping.label --[[ mapping.opts.desc or ]]
-        or mapping.cmd
-        or nil
-      if mapping.group then
-        mapping.label = label or '+prefix'
-        mapping.label = mapping.label:gsub('^%+', '')
-        mapping.label = Config.options.icons.group .. mapping.label
-      else
-        mapping.label = label or ''
-        for _, v in ipairs(Config.options.hidden) do
-          mapping.label = mapping.label:gsub(v, '')
-        end
-      end
+      M.format_child(mapping, mode, context, buf)
 
       -- remove duplicated keymap
       local exists = false
@@ -256,9 +262,16 @@ function M.get_mappings(mode, prefix_i, buf)
       return aw < bw
     end
   end)
-  map_group.mappings = tmp_mappings
 
-  -- vim.dbglog('returning  ' .. #ret.mappings .. ' mappings')
+  map_group.children = tmp_mappings
+
+  -- if map_group.op_i then
+  -- vim.dbglog('returning  ' .. #map_group.children .. ' children')
+  -- vim.dbglog()
+  -- vim.dbglog(require('which-key.util').without(map_group, 'children'))
+
+  -- end
   return map_group
 end
+
 return M

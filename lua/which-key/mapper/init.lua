@@ -99,11 +99,14 @@ function M.update_keymaps(mode, buf)
         label = M.get_desc(keymap),
       }
 
+      local node = tree:add(mapping)
+      if node and node.mapping and node.mapping.label == '' and mapping.label ~= '' then
+        node.mapping.label = mapping.label
+      end
+
       if is_group then
         mapping.group = not keymap.callback and not keymap.rhs and 'prefix' or 'multi'
       end
-
-      local node = tree:add(mapping)
     end
   end
 end
@@ -155,9 +158,8 @@ function M.format_child(mapping, mode, context, buf)
   -- check if child mapping is an operator
   local op_children = {}
   local op_i, op_n, op_desc = operators.get_operator(mapping.prefix)
-  if op_n == mapping.prefix then
+  if op_n == mapping.prefix and mode == 'n' then
     mapping.type = 'operator'
-    mapping.op_i = op_i
     mapping.label = op_desc
     local op_results = M.get_mappings(mode, op_i, buf)
     for _, mapping in pairs(op_results.children) do
@@ -178,6 +180,9 @@ function M.format_child(mapping, mode, context, buf)
     mapping.group = mapping.group or 'multi'
     mapping.child_count = #vim.tbl_keys(children)
   end
+  -- if mapping.child_count == 4 then
+  --   vim.dbglog('**', submap.children or {}, submap_buf.children or {})
+  -- end
 
   -- final description label formatting
   local label = mapping.label --[[ mapping.opts.desc or ]]
@@ -200,12 +205,10 @@ function M.get_mappings(mode, prefix_i, buf)
   local context = { buf = buf, mode = mode }
   local map_group = M.get_map_group(context, prefix_i)
 
-  local prefix_len = #Util.parse_internal(prefix_i)
-
   -- Format keys, labels and determine if skipping based on configuration
   local tmp_mappings = {}
   for _, mapping in pairs(map_group.children) do
-    mapping.key = mapping.keys.notation[prefix_len + 1]
+    mapping.key = mapping.keys.notation[#mapping.keys.notation]
     if Config.options.key_labels[mapping.key] then
       mapping.key = Config.options.key_labels[mapping.key]
     end

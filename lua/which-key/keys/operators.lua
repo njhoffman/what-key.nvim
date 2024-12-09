@@ -35,34 +35,23 @@ function M.process_motions(map_group, mode, prefix_i, buf)
     end
     if op_count then
       op_prefix_i = op_prefix_i:sub(#op_count + 1)
-      map_group.op_count = op_count
     end
     map_group.op_prefix_i = op_prefix_i
     map_group.op_i = op_i
     map_group.mode = mode .. 'o'
 
-    if op_n == prefix_i then
-      map_group.mapping.type = 'operator'
-      map_group.mapping.op_i = op_i
-      map_group.mapping.label = op_desc
-    end
-
     -- special operator mode before motion (movement or object) command
     -- i.e. movement: (no)d -> (n)l , object: (no)d -> (o)i -> (n)w
 
-    local op_results = require('which-key.mapper').get_mappings('o', op_prefix_i, buf)
-    if not map_group.mapping and op_results.mapping then
+    local motion_results = require('which-key.mapper').get_mappings('o', op_prefix_i, buf)
+    if not map_group.mapping and motion_results.mapping then
       -- motion command (operator pending + object)
-      map_group.mapping = vim.tbl_deep_extend('force', {}, op_results.mapping)
-      if not map_group.mapping.prefix then
-        vim.dbglog('++ no prefix for operator\n', map_group)
-      else
-        map_group.mapping.keys = Util.parse_keys(map_group.mapping.prefix)
-        map_group.mapping.prefix = op_n .. (op_count or '') .. map_group.mapping.prefix
-      end
+      map_group.mapping = vim.tbl_deep_extend('force', {}, motion_results.mapping)
+      map_group.mapping.prefix = op_n .. (op_count or '') .. map_group.mapping.prefix
+      map_group.mapping.keys = Util.parse_keys(map_group.mapping.prefix)
     end
 
-    for _, child_map in pairs(op_results.children) do
+    for _, child_map in pairs(motion_results.children) do
       child_map.prefix = op_n .. (op_count or '') .. child_map.prefix
       child_map.keys = Util.parse_keys(child_map.prefix)
       table.insert(map_group.children, child_map)

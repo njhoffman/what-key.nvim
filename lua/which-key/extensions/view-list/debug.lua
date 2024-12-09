@@ -1,4 +1,4 @@
-local state = require('which-key.view.state')
+local state = require('which-key.extensions.view-list.state')
 
 local M = {}
 
@@ -50,12 +50,18 @@ M.show_debug = function()
   --
 end
 
+M.update = function(map_group)
+  vim.dbglog('update debug', map_group)
+end
+
 M.toggle_debug = function()
   state.debug.enabled = not state.debug.enabled
   if state.debug.enabled then
+    state.cursor.callback = M.update
     M.show_debug()
   else
     M.hide_debug()
+    state.cursor.callback = nil
   end
 end
 

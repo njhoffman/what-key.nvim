@@ -4,22 +4,6 @@ local state = require('which-key.view.state')
 
 local M = {}
 
-function M.set_cursor(cursor_row)
-  state.cursor.row = cursor_row
-  vim.api.nvim_win_set_cursor(state.win, { cursor_row, 1 })
-end
-
-function M.show_cursor()
-  local buf = vim.api.nvim_get_current_buf()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  vim.api.nvim_buf_add_highlight(buf, Config.namespace, 'Cursor', cursor[1] - 1, cursor[2], cursor[2] + 1)
-end
-
-function M.hide_cursor()
-  local buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_clear_namespace(buf, Config.namespace, 0, -1)
-end
-
 function M.is_enabled(buf)
   local buftype = vim.api.nvim_get_option_value('buftype', { buf = buf })
   for _, bt in ipairs(Config.options.disable.buftypes) do
@@ -72,21 +56,18 @@ function M.get_bounds(opts)
     },
   }
 end
-function M.get_canvas_width()
-  local win_width = vim.api.nvim_win_get_width(state.win)
-  local canvas_width = win_width - Config.options.window.padding[2] - Config.options.window.padding[4]
-  return canvas_width
-end
 
 function M.calculate_timings(opts)
   local time_diff = (vim.fn.reltimestr(vim.fn.reltime(opts._start_time))):sub(1, 8)
   local t = state.timing
   if opts._load_window then
     t.show_n = t.show_n + 1
-    t.show_average = string.format('%.4f', t.show_average * (t.show_n - 1) / t.show_n + (time_diff / t.show_n))
+    t.show_average =
+      string.format('%.4f', t.show_average * (t.show_n - 1) / t.show_n + (time_diff / t.show_n))
   else
     t.keys_n = t.keys_n + 1
-    t.keys_average = string.format('%.4f', t.keys_average * (t.keys_n - 1) / t.keys_n + (time_diff / t.keys_n))
+    t.keys_average =
+      string.format('%.4f', t.keys_average * (t.keys_n - 1) / t.keys_n + (time_diff / t.keys_n))
   end
 end
 

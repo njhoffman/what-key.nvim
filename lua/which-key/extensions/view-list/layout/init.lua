@@ -1,4 +1,3 @@
-local Config = require('which-key.config')
 local Text = require('which-key.text')
 
 ---@class Layout
@@ -43,11 +42,11 @@ function Layout:make_title()
 end
 
 function Layout:make_list()
-  return require('which-key.layout.list')(self)
+  return require('which-key.extensions.view-list.layout.list')(self)
 end
 
 function Layout:make_breadcrumbs(history)
-  return require('which-key.layout.breadcrumbs')(self, history)
+  return require('which-key.extensions.view-list.layout.breadcrumbs')(self)
 end
 
 return Layout

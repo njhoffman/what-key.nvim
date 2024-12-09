@@ -1,7 +1,7 @@
 local Mapper = require('which-key.mapper')
 local Config = require('which-key.config')
-local view_utils = require('which-key.view.utils')
-local state = require('which-key.view.state')
+local view_utils = require('which-key.extensions.view-list.utils')
+local state = require('which-key.extensions.view-list.state')
 
 -- local win_id  -- window identifier. Replace it with actual window ID
 -- local current_window = vim.api.nvim_win_get_viewport(win_id)
@@ -138,6 +138,7 @@ function M.show()
   end
   vim.api.nvim_set_option_value('winhighlight', winhl, { win = state.win })
   vim.api.nvim_set_option_value('foldmethod', 'manual', { win = state.win })
+
   vim.api.nvim_set_option_value('winblend', Config.options.window.winblend, { win = state.win })
   vim.api.nvim_set_option_value('cursorline', true, { win = state.win })
 
@@ -151,13 +152,25 @@ function M.show()
         vim.cmd('VimadeUnfadeActive')
         vim.cmd('VimadeFadeLevel ' .. old_fadelevel)
       end
-      vim.api.nvim_exec_autocmds(
-        'ModeChanged',
-        { pattern = state.mode .. ':' .. vim.api.nvim_get_mode().mode }
-      )
+
+      -- local vstate = require('which-key.view.state')
+      -- vim.api.nvim_exec_autocmds(
+      --   'ModeChanged',
+      --   { pattern = vstate.mode .. ':' .. vim.api.nvim_get_mode().mode }
+      -- )
+
+      -- local winid = tonumber(ev.match)
+      -- local blend = vim.api.nvim_win_get_option(winid, 'winblend')
+      -- while blend < 100 do
+      --   blend = blend + 2
+      --   vim.api.nvim_win_set_option(winid, 'winblend', blend)
+      --   vim.cmd('redraw')
+      --   vim.wait(2)
+      -- end
     end,
     group = 'WhichKey',
   })
+
   if Config.options.vimade_fade then
     old_fadelevel = vim.api.nvim_get_var('vimade').fadelevel
     local fadelevel = type(Config.options.vimade_fade) == 'number' and Config.options.vimade_fade
@@ -188,12 +201,16 @@ M.launch_wk = function()
 end
 
 function M.back()
-  local node = Mapper.get_tree(state.mode, state.buf).tree:get(state.keys, -1)
-    or Mapper.get_tree(state.mode).tree:get(state.keys, -1)
-  state.cursor.row = 1
-  if node then
-    state.keys = node.prefix_i
-    state.cursor.row = state.cursor.history[state.mode .. '_' .. node.prefix_i] or 1
+  local vstate = require('which-key.view.state')
+  if vstate.keys ~= '' then
+    local node = Mapper.get_tree(vstate.mode, vstate.buf).tree:get(vstate.keys, -1)
+      or Mapper.get_tree(vstate.mode).tree:get(vstate.keys, -1)
+    state.cursor.row = 1
+    if node then
+      vstate.keys = node.prefix_i
+      state.cursor.row = state.cursor.history[vstate.mode .. '_' .. node.prefix_i] or 1
+    end
+    return { redraw = true }
   end
   -- state.history = table.remove(state.history, #state.history)
 end

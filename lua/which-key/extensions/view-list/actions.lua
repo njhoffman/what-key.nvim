@@ -1,16 +1,17 @@
 local Config = require('which-key.config')
 local Util = require('which-key.util')
-local state = require('which-key.view.state')
-local window = require('which-key.view.window')
-local debug = require('which-key.view.debug')
+
+local state = require('which-key.extensions.view-list.state')
+local window = require('which-key.extensions.view-list.window')
+local debug = require('which-key.extensions.view-list.debug')
 
 local maps = Config.options.mappings
 local maps_u = Config.options.mappings_user
 
 --stylua: ignore
 local internal_maps = {
-  [Util.t('<esc>')]             = 'hide',
-  [Util.t('<bs>')]              = 'back',
+  [Util.t('<esc>')]           = 'hide',
+  [Util.t('<bs>')]            = 'back',
   [Util.t(maps.page_down)]    = 'page_down',
   [Util.t(maps.page_up)]      = 'page_up',
   [Util.t(maps.scroll_up)]    = 'scroll_up',

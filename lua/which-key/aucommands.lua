@@ -39,7 +39,7 @@ end
 
 local load_buffer_mappings = function(buf)
   local diff = vim.fn.reltimestr(vim.fn.reltime(state.buffers[buf]))
-  vim.dbglog('load buffer: ' .. diff)
+  -- vim.dbglog('load buffer: ' .. diff)
   state.buffers[buf] = diff
   state.loading[buf] = false
   register_queue()
@@ -50,7 +50,7 @@ end
 
 local unload_buffer_mappings = function(buf)
   if state.buffers[buf] then
-    vim.dbglog('unload buffer: ' .. buf)
+    -- vim.dbglog('unload buffer: ' .. buf)
     -- local mode = Util.get_mode()
     -- Mapper.get_mappings(mode, '', buf)
     -- Keys.update(buf)

@@ -1,17 +1,13 @@
 local Mapper = require('which-key.mapper')
-local Config = require('which-key.config')
-local Layout = require('which-key.layout')
 local Util = require('which-key.util')
 local Logger = require('which-key.logger')
 local Hooks = require('which-key.keys.hooks')
 
 local state = require('which-key.view.state')
 local view_utils = require('which-key.view.utils')
-local actions = require('which-key.view.actions')
-local window = require('which-key.view.window')
+-- local actions = require('which-key.view.actions')
+local actions = require('which-key.extensions.view-list.actions')
 -- local debug = require('which-key.view.debug')
-
-local highlight = vim.api.nvim_buf_add_highlight
 
 ---@class View
 local M = {}
@@ -114,7 +110,8 @@ end
 
 function M.handle_mapping(results, opts)
   if vim.tbl_isempty(results.children) and vim.tbl_isempty(state.internal) then
-    window.hide()
+    require('which-key.extensions.view-list.window').hide()
+
     if results.mapping and not results.mapping.group then
       --- check for an exact match, feedkeys with remap
       if results.mapping.fn then
@@ -129,6 +126,7 @@ function M.handle_mapping(results, opts)
       opts._op_icon = '∅'
       M.execute(state.keys, state.mode, state.parent_buf)
     end
+
     return false
   end
   return true
@@ -160,56 +158,45 @@ function M.on_keys(keys, opts)
   opts = opts or {}
   M.init_state(keys, opts)
 
-  view_utils.show_cursor()
+  -- view_utils.show_cursor()
 
   while true do
-    M.read_pending()
+    if vim.tbl_isempty(state.internal) or state.internal.redraw then
+      M.read_pending()
 
-    opts._load_window = false
-    opts._op_icon = ''
+      opts._load_window = false
+      opts._op_icon = ''
 
-    local map_group = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
+      local map_group = Mapper.get_mappings(state.mode, state.keys, state.parent_buf)
 
-    vim.dbglog(Util.without(map_group, 'children'))
-    Util.update_mode(map_group.mode, map_group.op_i)
+      -- vim.dbglog(Util.without(map_group, 'children'))
+      -- Util.update_mode(map_group.mode, map_group.op_i)
 
-    if view_utils.is_valid(state.buf, state.win) then
-      local cursor = vim.api.nvim_win_get_cursor(state.win)
-      state.cursor.history[map_group.mode .. '_' .. map_group.prefix_i] = cursor[1]
-    end
-
-    -- if no child mappings log and quit
-    if not M.handle_mapping(map_group, opts) then
-      view_utils.calculate_timings(opts)
-      Logger.log_key(map_group, opts, state.internal)
-      return
-    end
-
-    if view_utils.is_enabled(state.parent_buf) then
-      if not view_utils.is_valid(state.buf, state.win) then
-        opts._load_window = true
-        window.show()
+      -- if no child mappings log and quit
+      if not M.handle_mapping(map_group, opts) then
+        view_utils.calculate_timings(opts)
+        Logger.log_key(map_group, opts, state.internal)
+        return
       end
 
-      local layout = Layout:new(map_group)
+      -- if view_utils.is_valid(state.buf, state.win) then
+      --   local cursor = vim.api.nvim_win_get_cursor(state.win)
+      --   state.cursor.history[map_group.mode .. '_' .. map_group.prefix_i] = cursor[1]
+      -- end
 
-      M.render(layout:make_list(layout))
-      M.render_footer(layout:make_breadcrumbs())
-      M.render_title(layout:make_title())
-      --   M.show_debug()
+      require('which-key.extensions.view-list').render(state, opts, map_group)
+
+      -- M.set_cursor(state.cursor.row or 1)
+      opts._op_icon = map_group and map_group.mapping and map_group.mapping.group == true and '󰐕'
+        or ''
+      view_utils.calculate_timings(opts)
+      Logger.log_key(map_group, opts, state.internal)
     end
 
     vim.cmd([[redraw]])
 
-    -- M.set_cursor(state.cursor.row or 1)
-    opts._op_icon = map_group and map_group.mapping and map_group.mapping.group == true and '󰐕'
-      or ''
-    view_utils.calculate_timings(opts)
-    Logger.log_key(map_group, opts, state.internal)
-
     -- pause here until another character entered (while panel open)
     local c = view_utils.getchar()
-
     opts._start_time = vim.fn.reltime()
 
     state.internal = actions.check_internal(c, opts.mode)
@@ -219,55 +206,11 @@ function M.on_keys(keys, opts)
       break
     elseif vim.tbl_isempty(state.internal) then
       state.keys = state.keys .. c
-      if #c > 0 then
-        vim.api.nvim_win_set_cursor(state.win, { 1, 1 })
-      end
+      -- if #c > 0 then
+      --   vim.api.nvim_win_set_cursor(state.win, { 1, 1 })
+      -- end
     end
   end
-end
-
-----@param text Text
-function M.render(text)
-  local bounds = view_utils.get_bounds()
-  local view = vim.api.nvim_win_call(state.win, vim.fn.winsaveview)
-  vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, text.lines)
-  local height = #text.lines
-  if height > bounds.height.max then
-    height = bounds.height.max
-  end
-  vim.api.nvim_win_set_height(state.win, height)
-  if view_utils.is_valid(state.buf, state.win) then
-    vim.api.nvim_buf_clear_namespace(state.buf, Config.namespace, 0, -1)
-  end
-  for _, data in ipairs(text.hl) do
-    highlight(state.buf, Config.namespace, data.group, data.line, data.from, data.to)
-  end
-  vim.api.nvim_win_call(state.win, function()
-    vim.fn.winrestview(view)
-  end)
-end
-
-function M.render_footer(breadcrumbs)
-  -- hl = { [1] = { from = 1, group = "WhichKeyMode", line = 0, to = 5 },
-  if breadcrumbs and breadcrumbs.lines then
-    vim.api.nvim_win_set_config(state.win, {
-      footer = breadcrumbs.lines[1],
-    })
-  end
-  -- for _, data in ipairs(text.hl) do
-  --   highlight(state.buf, config.namespace, data.group, data.line, data.from, data.to)
-  -- end
-  -- vim.api.nvim_win_call(state.win, function()
-  --   vim.fn.winrestview(view)
-  -- end)
-end
-
-function M.render_title(title)
-  -- vim.api.nvim_win_set_config(state.win, {
-  --     title = title.lines[1],
-  --   })
-  -- vim.api.nvim_win_set_option('footer', breadcrumbs.lines[1])
-  -- vim.dbglog('**', title)
 end
 
 return M

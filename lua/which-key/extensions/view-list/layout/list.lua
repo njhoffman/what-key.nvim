@@ -1,9 +1,10 @@
 local Util = require('which-key.util')
 local Config = require('which-key.config')
 local Text = require('which-key.text')
-local state = require('which-key.view.state')
-local view_utils = require('which-key.view.utils')
 local Logger = require('which-key.logger')
+
+local view_utils = require('which-key.extensions.view-list.utils')
+local state = require('which-key.extensions.view-list.state')
 
 -- function Layout:make_list(win)
 local render_list = function(self)
@@ -14,9 +15,7 @@ local render_list = function(self)
     return
   end
 
-  if type(Config.options.user_hooks.list_pre) == 'function' then
-    self.items = Config.options.user_hooks.list_pre(self.items)
-  end
+  -- self.items = Config.options.user_hooks.list_pre(self.items)
 
   local win_width = vim.api.nvim_win_get_width(state.win)
   local canvas_width = view_utils.get_canvas_width()
@@ -130,11 +129,10 @@ local render_list = function(self)
       label = vim.fn.strcharpart(label, 0, max_label_width - 2) .. '…'
     end
 
-    -- local children = item.children and tonumber(item.children) or nil
     local children = item.child_count or nil
-    local hl = item.op_i and 'Operator' or item.group and 'Group' or 'Desc'
+    local hl = item.type == 'operator' and 'Operator' or item.group and 'Group' or 'Desc'
     if children then
-      hl = item.op_i and 'Operator' or item.group and 'Group' or 'Multi'
+      hl = item.type == 'operator' and 'Operator' or item.group and 'Group' or 'Multi'
       label = label
         .. string.rep(' ', max_label_width - Text.len(label) - #tostring(children) + 1)
         .. ' +'
@@ -150,9 +148,7 @@ local render_list = function(self)
     end
   end
 
-  if type(Config.options.user_hooks.list_post) == 'function' then
-    self.text = Config.options.user_hooks.list_post(self.text)
-  end
+  -- self.text = Config.options.user_hooks.list_post(self.text)
 
   for _ = 1, Config.options.window.padding[3], 1 do
     self.text:nl()

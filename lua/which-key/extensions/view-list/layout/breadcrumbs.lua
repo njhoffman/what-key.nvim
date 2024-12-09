@@ -1,7 +1,8 @@
 local Config = require('which-key.config')
 local Mapper = require('which-key.mapper')
 local Logger = require('which-key.logger')
-local state = require('which-key.view.state')
+
+local state = require('which-key.extensions.view-list.state')
 
 local render_breadcrumbs = function(self)
   if not self.results.mapping then

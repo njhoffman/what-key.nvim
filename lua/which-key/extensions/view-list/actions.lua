@@ -1,9 +1,9 @@
-local Config = require('which-key.config')
-local Util = require('which-key.util')
+local Config = require("which-key.config")
+local Util = require("which-key.util")
 
-local state = require('which-key.extensions.view-list.state')
-local window = require('which-key.extensions.view-list.window')
-local debug = require('which-key.extensions.view-list.debug')
+local state = require("which-key.extensions.view-list.state")
+local window = require("which-key.extensions.view-list.window")
+local debug = require("which-key.extensions.view-list.debug")
 
 local maps = Config.options.mappings
 local maps_u = Config.options.mappings_user
@@ -23,11 +23,11 @@ local internal_maps = {
 }
 
 local options_menu = function()
-  vim.dbglog('options_menu')
+  vim.dbglog("options_menu")
 end
 
 local help_menu = function()
-  vim.dbglog('help_menu')
+  vim.dbglog("help_menu")
 end
 
 --stylua: ignore
@@ -51,7 +51,7 @@ local check_user_mappings = function(c, mode)
     if Util.t(k) == c then
       result = { key = k, mode = mode, user_mapping = true }
       fn(string.sub(state.keys, 1, -1 - #c), mode)
-      result = vim.tbl_deep_extend('force', result, window.hide() or {})
+      result = vim.tbl_deep_extend("force", result, window.hide() or {})
       break
     end
   end
@@ -60,7 +60,7 @@ end
 
 local M = {}
 
-M.action_keys = vim.tbl_deep_extend('force', vim.tbl_values(maps), { '<esc>', '<bs>' })
+M.action_keys = vim.tbl_deep_extend("force", vim.tbl_values(maps), { "<esc>", "<bs>" })
 
 -- check if input matches local (internal) whichkey maps
 function M.check_internal(c, mode)
@@ -69,7 +69,7 @@ function M.check_internal(c, mode)
   if action_key then
     result = { key = action_key, mode = mode }
     local map_fn = actions[action_key]
-    result = vim.tbl_deep_extend('force', result, map_fn(c, mode) or {})
+    result = vim.tbl_deep_extend("force", result, map_fn(c, mode) or {})
   else
     result = check_user_mappings(c, mode)
   end

@@ -1,9 +1,9 @@
-local Mapper = require('which-key.mapper')
-local Keys = require('which-key.keys')
-local Logger = require('which-key.logger')
-local state = require('which-key.state')
+local Mapper = require("which-key.mapper")
+local Keys = require("which-key.keys")
+local Logger = require("which-key.logger")
+local state = require("which-key.state")
 
-local group = vim.api.nvim_create_augroup('WhichKey', { clear = true })
+local group = vim.api.nvim_create_augroup("WhichKey", { clear = true })
 
 local register_queue = function(first_load)
   for _, reg in pairs(state.queue) do
@@ -25,8 +25,8 @@ end
 local get_buf = function(fn)
   return function(buf)
     return fn(
-      type(buf) == 'number' and buf
-        or type(buf) == 'table' and type(buf.buf) == 'number' and buf.buf
+      type(buf) == "number" and buf
+        or type(buf) == "table" and type(buf.buf) == "number" and buf.buf
         or vim.api.nvim_get_current_buf()
     )
   end
@@ -62,10 +62,10 @@ local M = {}
 M.register_queue = register_queue
 
 M.schedule_load = function()
-  vim.api.nvim_create_autocmd('VimEnter', {
+  vim.api.nvim_create_autocmd("VimEnter", {
     group = group,
     once = true,
-    command = 'lua vim.defer_fn(require("which-key").load, 1)',
+    command = 'lua vim.defer_fn(require("which-key").load, 500)',
   })
 end
 
@@ -74,15 +74,15 @@ M.setup = function()
   init_buffer_mappings(buf)
   load_buffer_mappings(buf)
 
-  vim.api.nvim_create_autocmd({ 'BufReadPre' }, {
+  vim.api.nvim_create_autocmd({ "BufReadPre" }, {
     group = group,
     callback = get_buf(init_buffer_mappings),
   })
-  vim.api.nvim_create_autocmd({ 'BufReadPost' }, {
+  vim.api.nvim_create_autocmd({ "BufReadPost" }, {
     group = group,
     callback = get_buf(load_buffer_mappings),
   })
-  vim.api.nvim_create_autocmd({ 'BufDelete' }, {
+  vim.api.nvim_create_autocmd({ "BufDelete" }, {
     group = group,
     callback = get_buf(unload_buffer_mappings),
   })

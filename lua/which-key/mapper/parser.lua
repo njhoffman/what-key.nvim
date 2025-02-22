@@ -1,6 +1,6 @@
-local Logger = require('which-key.logger')
-local Util = require('which-key.util')
-local mapper_utils = require('which-key.mapper.utils')
+local Logger = require("which-key.logger")
+local Util = require("which-key.util")
+local mapper_utils = require("which-key.mapper.utils")
 
 -- "<buffer>", "<expr>", "<nowait>", "<silent>", "<script>",  "<unique>"
 -- "desc" human-readable description
@@ -9,69 +9,73 @@ local mapper_utils = require('which-key.mapper.utils')
 
 -- keymap fields that will be removed from base table and saved to mapping.opts field
 local keymap_fields = {
-  'buffer',
-  'callback',
-  'desc',
-  'expr',
-  'noremap',
-  'nowait',
-  'replace_keycodes', -- TODO: add config setting for default value
-  'script',
-  'silent',
-  'unique',
+  "buffer",
+  "callback",
+  "desc",
+  "expr",
+  "noremap",
+  "nowait",
+  "replace_keycodes", -- TODO: add config setting for default value
+  "script",
+  "silent",
+  "unique",
 }
 
 -- whichkey specific fields when registering keymaps and saved to mapping.meta field
 local register_fields = {
-  'category',
-  'cond',
-  'name',
-  'plugin',
+  "category",
+  "cond",
+  "name",
+  "icon",
+  "plugin",
   -- 'prefix', TODO: mapping.prefix to mapping.keys.raw
-  'preset',
-  'remap',
+  "preset",
+  "remap",
+  -- -- wk args
+  --  plugin = { inherit = true },
+  --  group = {},
+  --  hidden = { inherit = true },
+  --  cond = { inherit = true },
+  --  preset = { inherit = true },
+  --  icon = { inherit = true },
+  --  proxy = {},
+  --  expand = {},
+  --  -- deprecated
+  --  name = { transform = "group", deprecated = true },
+  --  prefix = { inherit = true, deprecated = true },
+  --  cmd = { transform = "rhs", deprecated = true },
 }
 
 -- fields for for the mapgroup.mapping item
 local mapping_fields = {
-  'child_count',
-  'cmd',
-  'group',
-  'keys',
-  'name',
-  'meta',
-  'mode',
-  'opts',
-  'preset',
+  "icon",
+  "child_count",
+  "cmd",
+  "group",
+  "keys",
+  "name",
+  "meta",
+  "mode",
+  "opts",
+  "preset",
   -- TODO: mapping.prefix to mapping.keys.raw
-  'prefix',
-  'type',
-}
-
--- fields for mapgroup
-local mapgroup_fields = {
-  'buf',
-  'children',
-  'mapping',
-  'mode',
-  'prefix_n',
-  'prefix_i',
-  'op_i',
-  'op_prefix_i',
+  "prefix",
+  "type",
 }
 
 local child_fields = mapper_utils.lookup({
-  'buffer',
-  'expr',
-  'mode',
-  'noremap',
-  'nowait',
-  'prefix',
-  'preset',
-  'replace_keycodes',
-  'script',
-  'silent',
-  'unique',
+  "icon",
+  "buffer",
+  "expr",
+  "mode",
+  "noremap",
+  "nowait",
+  "prefix",
+  "preset",
+  "replace_keycodes",
+  "script",
+  "silent",
+  "unique",
 })
 
 -- child_count = 14,
@@ -121,8 +125,11 @@ end
 function M._process(maps, reg_opts)
   local list, children = {}, {}
   for key, val in pairs(maps) do
-    if type(key) == 'number' then
-      if type(val) == 'table' then
+    if type(val) == "function" then
+      val = val()
+    end
+    if type(key) == "number" then
+      if type(val) == "table" then
         -- nested child, without key
         table.insert(children, val)
       else
@@ -144,7 +151,7 @@ end
 function M._build_maps(maps, opts, new_maps)
   -- don't add if cond is defined and not true
   if opts.cond ~= nil then
-    if type(opts.cond) == 'function' then
+    if type(opts.cond) == "function" then
       if not opts.cond() then
         return
       end
@@ -157,8 +164,8 @@ function M._build_maps(maps, opts, new_maps)
   local list, children = M._process(maps, opts)
 
   if opts.name then
-    opts.name = opts.name and opts.name:gsub('^%+', '')
-    opts.group = opts.group or 'prefix'
+    opts.name = opts.name and opts.name:gsub("^%+", "")
+    opts.group = opts.group or "prefix"
   end
 
   -- fix remap
@@ -174,28 +181,28 @@ function M._build_maps(maps, opts, new_maps)
 
   -- { desc }
   if #list == 1 then
-    if type(list[1]) ~= 'string' then
-      error('Invalid mapping for ' .. vim.inspect({ value = maps, opts = opts }))
+    if type(list[1]) ~= "string" then
+      error("Invalid mapping for " .. vim.inspect({ value = maps, opts = opts }))
     end
     opts.desc = list[1]
   -- { cmd, desc }
   elseif #list == 2 then
-    assert(type(list[2]) == 'string')
+    assert(type(list[2]) == "string")
     opts.desc = list[2]
-    if type(list[1]) == 'string' then
+    if type(list[1]) == "string" then
       opts.cmd = list[1]
-    elseif type(list[1]) == 'function' then
-      opts.cmd = ''
+    elseif type(list[1]) == "function" then
+      opts.cmd = ""
       opts.callback = list[1]
     else
-      error('Incorrect mapping ' .. vim.inspect(list))
+      error("Incorrect mapping " .. vim.inspect(list))
     end
   elseif #list > 2 then
-    error('Incorrect mapping ' .. vim.inspect(list))
+    error("Incorrect mapping " .. vim.inspect(list))
   end
 
   if opts.desc or opts.group then
-    if type(opts.mode) == 'table' then
+    if type(opts.mode) == "table" then
       for _, mode in pairs(opts.mode) do
         local mode_opts = vim.deepcopy(opts)
         mode_opts.mode = mode
@@ -209,8 +216,8 @@ function M._build_maps(maps, opts, new_maps)
   -- process any array child mappings
   for k, v in pairs(children) do
     local child_opts = M._child_opts(opts)
-    if type(k) == 'string' then
-      child_opts.prefix = (child_opts.prefix or '') .. k
+    if type(k) == "string" then
+      child_opts.prefix = (child_opts.prefix or "") .. k
     end
     M._try_build_maps(v, child_opts, new_maps)
   end
@@ -221,7 +228,7 @@ end
 function M._parse_mapping(mapping)
   mapping.silent = mapping.silent ~= false
   mapping.noremap = mapping.noremap ~= false
-  if mapping.cmd and mapping.cmd:lower():find('^<plug>') then
+  if mapping.cmd and mapping.cmd:lower():find("^<plug>") then
     mapping.noremap = false
   end
 
@@ -230,7 +237,7 @@ function M._parse_mapping(mapping)
 
   -- mapping.mode = mapping.mode or 'n'
   mapping.label = mapping.name or mapping.label or mapping.desc
-  mapping.keys = Util.parse_keys(mapping.prefix or '')
+  mapping.keys = Util.parse_keys(mapping.prefix or "")
 
   local opts = {}
   for _, o in ipairs(keymap_fields) do
@@ -250,7 +257,7 @@ function M._parse_mapping(mapping)
 end
 
 function M._try_build_maps(reg_maps, reg_opts, new_maps)
-  reg_maps = type(reg_maps) ~= 'table' and { reg_maps } or reg_maps
+  reg_maps = type(reg_maps) ~= "table" and { reg_maps } or reg_maps
   reg_opts = reg_opts or {}
 
   local ok, err = pcall(M._build_maps, reg_maps, reg_opts, new_maps)

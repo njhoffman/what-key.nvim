@@ -91,7 +91,7 @@ function M.load(vim_enter)
     vim.dbglog("already laoded", #state.queue)
   end
   state.load_start = vim.fn.reltime()
-  -- require('which-key.plugins').setup()
+  -- require('what-key.plugins').setup()
   require("which-key.presets").setup()
   require("which-key.colors").setup()
   aucommands.setup()

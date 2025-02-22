@@ -1,4 +1,4 @@
-local keys = require("which-key.keys")
+local keys = require("what-key.keys")
 local sort_by_mode = true
 
 local sort_table = function(tbl)

@@ -1,4 +1,4 @@
-local Logger = require('what-key.logger')
+local Logger = require("what-key.logger")
 
 ---@class Util
 local M = {}
@@ -8,11 +8,11 @@ local strsub = string.sub
 local cache = {}
 ---@type table<string,string>
 local tcache = {}
-local cache_leaders = ''
+local cache_leaders = ""
 
 function M.check_cache()
   ---@type string
-  local leaders = (vim.g.mapleader or '') .. ':' .. (vim.g.maplocalleader or '')
+  local leaders = (vim.g.mapleader or "") .. ":" .. (vim.g.maplocalleader or "")
   if leaders ~= cache_leaders then
     cache = {}
     tcache = {}
@@ -40,8 +40,8 @@ end
 
 function M.get_mode()
   local mode = vim.api.nvim_get_mode().mode
-  mode = mode:gsub(M.t('<C-V>'), 'v')
-  mode = mode:gsub(M.t('<C-S>'), 's')
+  mode = mode:gsub(M.t("<C-V>"), "v")
+  mode = mode:gsub(M.t("<C-S>"), "s")
   return mode:lower()
 end
 
@@ -53,7 +53,7 @@ function M.t(str)
   M.check_cache()
   if not tcache[str] then
     -- https://github.com/neovim/neovim/issues/17369
-    tcache[str] = vim.api.nvim_replace_termcodes(str, false, true, true):gsub('\128\254X', '\128')
+    tcache[str] = vim.api.nvim_replace_termcodes(str, false, true, true):gsub("\128\254X", "\128")
   end
   return tcache[str]
 end
@@ -81,9 +81,9 @@ local utf8len_tab = {
 -- stylua: ignore end
 
 local Tokens = {
-  ['<'] = strbyte('<'),
-  ['>'] = strbyte('>'),
-  ['-'] = strbyte('-'),
+  ["<"] = strbyte("<"),
+  [">"] = strbyte(">"),
+  ["-"] = strbyte("-"),
 }
 ---@return KeyCodes
 function M.parse_keys(keystr)
@@ -102,7 +102,7 @@ function M.parse_keys(keystr)
   end
 
   local keystr_orig = keystr
-  keystr = keystr:gsub('<lt>', '<')
+  keystr = keystr:gsub("<lt>", "<")
   local notation = {}
   ---@alias ParseState
   --- | "Character"
@@ -111,30 +111,30 @@ function M.parse_keys(keystr)
   local start = 1
   local i = start
   ---@type ParseState
-  local state = 'Character'
+  local state = "Character"
   while i <= #keystr do
     local c = strbyte(keystr, i, i)
 
-    if state == 'Character' then
+    if state == "Character" then
       start = i
       -- Only interpret special tokens if neovim also replaces it
-      state = c == Tokens['<'] and internal[#notation + 1] ~= '<' and 'Special' or state
-    elseif state == 'Special' then
-      state = (c == Tokens['-'] and 'SpecialNoClose') or (c == Tokens['>'] and 'Character') or state
+      state = c == Tokens["<"] and internal[#notation + 1] ~= "<" and "Special" or state
+    elseif state == "Special" then
+      state = (c == Tokens["-"] and "SpecialNoClose") or (c == Tokens[">"] and "Character") or state
     else
-      state = 'Special'
+      state = "Special"
     end
 
     i = i + utf8len_tab[c + 1]
-    if state == 'Character' then
+    if state == "Character" then
       local k = strsub(keystr, start, i - 1)
-      notation[#notation + 1] = k == ' ' and '<space>' or k
+      notation[#notation + 1] = k == " " and "<space>" or k
     end
   end
 
   local mapleader = vim.g.mapleader
   mapleader = mapleader and M.t(mapleader)
-  notation[1] = internal[1] == mapleader and '<leader>' or notation[1]
+  notation[1] = internal[1] == mapleader and "<leader>" or notation[1]
 
   if #notation ~= #internal then
     error(vim.inspect({ keystr = keystr, internal = internal, notation = notation }))
@@ -158,17 +158,17 @@ function M.parse_internal(keystr)
   --- | "Character"
   --- | "Special"
   ---@type ParseInternalState
-  local state = 'Character'
+  local state = "Character"
   local start = 1
   local i = 1
   while i <= #keystr do
     local c = strbyte(keystr, i, i)
 
-    if state == 'Character' then
-      state = c == 128 and 'Special' or state
+    if state == "Character" then
+      state = c == 128 and "Special" or state
       i = i + utf8len_tab[c + 1]
 
-      if state == 'Character' then
+      if state == "Character" then
         keys[#keys + 1] = strsub(keystr, start, i - 1)
         start = i
       end
@@ -183,27 +183,26 @@ function M.parse_internal(keystr)
       end
       -- The last byte of this sequence should be between 0x02 and 0x7f,
       -- switch to Character state to collect.
-      state = 'Character'
+      state = "Character"
     end
   end
   return keys
 end
 
 function M.check_mode(mode, buf)
-  if not ('nvsxoiRct'):find(mode) then
-    Logger.error(string.format('Invalid mode %q for buf %d', mode, buf or 0))
+  if not ("nvsxoiRct"):find(mode) then
+    Logger.error(string.format("Invalid mode %q for buf %d", mode, buf or 0))
     return false
   end
   return true
 end
 
 function M.get_operator(op)
-  local standard_ops =
-    { 'd', 'y', 'c', '>', '<', '=', 'g~', 'gu', 'gU', '!', 'gq', 'g?', 'zf', 'g@' }
-  if op == nil or op == '' then
+  local standard_ops = { "d", "y", "c", ">", "<", "=", "g~", "gu", "gU", "!", "gq", "g?", "zf", "g@" }
+  if op == nil or op == "" then
     return op
   elseif not vim.tbl_contains(standard_ops, op) then
-    return 'g@', op
+    return "g@", op
   else
     return op
   end
@@ -214,14 +213,14 @@ function M.update_mode(mode, _op)
   -- no, nov, noV, and no\x16.
   if mode then
     local op, opfunc = M.get_operator(_op)
-    if opfunc and tostring(opfunc) ~= '' then
-      mode = mode == 'n' and 'no' or mode
-      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_g@_' .. opfunc)
-    elseif op and tostring(op) ~= '' then
-      mode = mode == 'n' and 'no' or mode
-      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode .. '_' .. op)
+    if opfunc and tostring(opfunc) ~= "" then
+      mode = mode == "n" and "no" or mode
+      vim.api.nvim_command("doautocmd <nomodeline> User WhatKeyMode_" .. mode .. "_g@_" .. opfunc)
+    elseif op and tostring(op) ~= "" then
+      mode = mode == "n" and "no" or mode
+      vim.api.nvim_command("doautocmd <nomodeline> User WhatKeyMode_" .. mode .. "_" .. op)
     else
-      vim.api.nvim_command('doautocmd <nomodeline> User WhichKeyMode_' .. mode)
+      vim.api.nvim_command("doautocmd <nomodeline> User WhatKeyMode_" .. mode)
     end
   end
 end
@@ -229,7 +228,7 @@ end
 M.ctrlkey = function(c)
   local byte = string.byte(c)
   if byte >= 1 and byte <= 31 then
-    return '<C-' .. string.char(byte + 64) .. '>'
+    return "<C-" .. string.char(byte + 64) .. ">"
   else
     return c
   end

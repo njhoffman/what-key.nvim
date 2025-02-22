@@ -1,13 +1,13 @@
-local state = require('what-key.extensions.view-list.state')
+local state = require("what-key.extensions.view-list.state")
 
 local M = {}
 
 M.hide_debug = function()
-  vim.dbglog('hide debug')
+  vim.dbglog("hide debug")
 end
 
 M.show_debug = function()
-  vim.dbglog('show debug')
+  vim.dbglog("show debug")
 
   -- local opts = {
   --   relative = 'editor',
@@ -35,14 +35,14 @@ M.show_debug = function()
   -- state.buf = vim.api.nvim_create_buf(false, true)
   -- state.win = vim.api.nvim_open_win(state.buf, false, opts)
   --
-  -- vim.api.nvim_set_option_value('filetype', 'WhichKey', { buf = state.buf })
+  -- vim.api.nvim_set_option_value('filetype', 'WhatKey', { buf = state.buf })
   -- vim.api.nvim_set_option_value('buftype', 'nofile', { buf = state.buf })
   -- vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = state.buf })
   -- vim.api.nvim_set_option_value('modifiable', true, { buf = state.buf })
   --
-  -- local winhl = 'NormalFloat:WhichKeyFloat'
+  -- local winhl = 'NormalFloat:WhatKeyFloat'
   -- if vim.fn.hlexists('FloatBorder') == 1 then
-  --   winhl = winhl .. ',FloatBorder:WhichKeyBorder'
+  --   winhl = winhl .. ',FloatBorder:WhatKeyBorder'
   -- end
   -- vim.api.nvim_set_option_value('winhighlight', winhl, { win = state.win })
   -- vim.api.nvim_set_option_value('foldmethod', 'manual', { win = state.win })
@@ -51,7 +51,7 @@ M.show_debug = function()
 end
 
 M.update = function(map_group)
-  vim.dbglog('update debug', map_group)
+  vim.dbglog("update debug", map_group)
 end
 
 M.toggle_debug = function()

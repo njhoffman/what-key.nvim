@@ -1,10 +1,10 @@
-local Util = require('what-key.util')
-local Config = require('what-key.config')
-local state = require('what-key.keys.state')
-local keys_utils = require('what-key.keys.utils')
+local Util = require("what-key.util")
+local Config = require("what-key.config")
+local state = require("what-key.keys.state")
+local keys_utils = require("what-key.keys.utils")
 
 -- secret character that will be used to create <nop> mappings
-local secret = 'Þ'
+local secret = "Þ"
 
 local M = {}
 
@@ -14,7 +14,7 @@ M.hooked_nop = {}
 M.hooked_fast = {}
 
 function M.hook_id(prefix_n, mode, buf)
-  return mode .. (buf or '') .. Util.t(prefix_n)
+  return mode .. (buf or "") .. Util.t(prefix_n)
 end
 
 function M.is_hooked(prefix_n, mode, buf)
@@ -47,24 +47,24 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
     return
   end
   -- don't hook to j or k in INSERT mode
-  if mode == 'i' and (prefix_n == 'j' or prefix_n == 'k') then
+  if mode == "i" and (prefix_n == "j" or prefix_n == "k") then
     return
   end
   -- never hook q
-  if mode == 'n' and prefix_n == 'q' then
+  if mode == "n" and prefix_n == "q" then
     return
   end
   -- never hook into select mode
-  if mode == 's' then
-    vim.notify('which-key: select mode is not supported', vim.log.levels.WARN)
+  if mode == "s" then
+    vim.notify("whatkey: select mode is not supported", vim.log.levels.WARN)
     return
   end
   -- never hook into operator pending mode
   -- this is handled differently
-  if mode == 'o' then
+  if mode == "o" then
     return
   end
-  if Util.t(prefix_n) == Util.t('<esc>') then
+  if Util.t(prefix_n) == Util.t("<esc>") then
     return
   end
   -- never hook into operators in visual mode
@@ -75,12 +75,12 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
   -- vim.dbglog('hook', secret_only, mode, buf, tostring(prefix_n))
 
   -- Check if we need to create the hook
-  if type(Config.options.triggers) == 'string' and Config.options.triggers ~= 'auto' then
+  if type(Config.options.triggers) == "string" and Config.options.triggers ~= "auto" then
     if Util.t(prefix_n) ~= Util.t(Config.options.triggers) then
       return
     end
   end
-  if type(Config.options.triggers) == 'table' then
+  if type(Config.options.triggers) == "table" then
     local ok = false
     for _, trigger in pairs(Config.options.triggers) do
       if Util.t(trigger) == Util.t(prefix_n) then
@@ -99,19 +99,19 @@ function M.hook_add(prefix_n, mode, buf, secret_only)
 
   -- hook up if needed
   if not M.hooked[id] and not M.hooked[id_global] then
-    local cmd = [[<cmd>lua require("which-key").start(%q, {mode = %q, auto = true})<cr>]]
+    local cmd = [[<cmd>lua require("what-key").start(%q, {mode = %q, auto = true})<cr>]]
     cmd = string.format(cmd, Util.t(prefix_n), mode)
-    local mapmode = mode == 'v' and 'x' or mode
+    local mapmode = mode == "v" and "x" or mode
     -- map group triggers and nops
     if secret_only ~= true then
-      opts.desc = 'which-key trigger:auto' .. ' (' .. mapmode .. ') ' .. prefix_n .. ' :' .. cmd
+      opts.desc = "what-key trigger:auto" .. " (" .. mapmode .. ") " .. prefix_n .. " :" .. cmd
       M.hooked_auto[id] = true
       keys_utils.map(mapmode, prefix_n, cmd, buf, opts)
     end
 
     if not state.nowait[prefix_n] then
-      -- nops are needed, so that WhichKey always respects timeoutlen
-      -- opts.desc = 'which-key trigger:nop ' .. ' (' .. mapmode .. ') ' .. prefix_n .. ' :<nop>'
+      -- nops are needed, so that WhatKey always respects timeoutlen
+      -- opts.desc = 'what-key trigger:nop ' .. ' (' .. mapmode .. ') ' .. prefix_n .. ' :<nop>'
       -- M.hooked_nop[id] = true
       -- keys_utils.map(mapmode, prefix_n .. secret, '<nop>', buf, opts)
     else
@@ -125,12 +125,12 @@ end
 ---@param node Node
 function M.add_hooks(mode, buf, node, secret_only)
   if not node.mapping then
-    node.mapping = vim.tbl_deep_extend('force', {}, {
+    node.mapping = vim.tbl_deep_extend("force", {}, {
       prefix = node.prefix_n,
       keys = Util.parse_keys(node.prefix_n),
     })
   end
-  if node.prefix_n ~= '' and (node.mapping.group == true and not node.mapping.cmd) or node.op_i then
+  if node.prefix_n ~= "" and (node.mapping.group == true and not node.mapping.cmd) or node.op_i then
     -- first non-cmd level, so create hook and make all decendents secret only
     M.hook_add(node.prefix_n, mode, buf, secret_only)
     secret_only = true
@@ -143,8 +143,8 @@ end
 function M.is_hook(prefix, cmd)
   -- skip mappings with our secret nop command
   local has_secret = prefix:find(secret)
-  -- skip auto which-key mappings
-  local has_wk = cmd and cmd:find('which%-key') and cmd:find('auto') or false
+  -- skip auto what-key mappings
+  local has_wk = cmd and cmd:find("what%-key") and cmd:find("auto") or false
   return has_wk or has_secret
 end
 

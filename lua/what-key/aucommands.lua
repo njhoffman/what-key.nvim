@@ -3,7 +3,7 @@ local Keys = require("what-key.keys")
 local Logger = require("what-key.logger")
 local state = require("what-key.state")
 
-local group = vim.api.nvim_create_augroup("WhichKey", { clear = true })
+local group = vim.api.nvim_create_augroup("WhatKey", { clear = true })
 
 local register_queue = function(first_load)
   for _, reg in pairs(state.queue) do
@@ -65,7 +65,7 @@ M.schedule_load = function()
   vim.api.nvim_create_autocmd("VimEnter", {
     group = group,
     once = true,
-    command = 'lua vim.defer_fn(require("which-key").load, 500)',
+    command = 'lua vim.defer_fn(require("what-key").load, 500)',
   })
 end
 

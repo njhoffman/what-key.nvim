@@ -100,7 +100,7 @@ local on_mode = function(ev)
   )
 end
 local setup = function()
-  local ns = vim.api.nvim_create_namespace("which-key")
+  -- local ns = vim.api.nvim_create_namespace("what-key")
   -- state.keys = ''
   -- state.history = {}
   -- state.internal = {}
@@ -110,7 +110,7 @@ local setup = function()
   -- state.reg = vim.api.nvim_get_vvar('register')
   -- state.parent_buf = vim.api.nvim_get_current_buf()
 
-  local augroup = vim.api.nvim_create_augroup("which-key", { clear = true })
+  -- local augroup = vim.api.nvim_create_augroup("whatkey", { clear = true })
   -- vim.api.nvim_create_autocmd("ModeChanged", {
   --   group = augroup,
   --   callback = on_mode,

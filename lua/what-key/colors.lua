@@ -1,4 +1,4 @@
-local Config = require('what-key.config')
+local Config = require("what-key.config")
 
 local M = {}
 
@@ -19,10 +19,10 @@ local links = {
 
 function M.setup()
   for k, v in pairs(links) do
-    vim.api.nvim_set_hl(0, 'WhichKey' .. k, { link = v, default = true })
+    vim.api.nvim_set_hl(0, "WhatKey" .. k, { link = v, default = true })
     if vim.tbl_contains(Config.options.mode_highlights, k:lower()) then
-      for _, mode in pairs({ 'Normal', 'Insert', 'Command', 'Operator', 'Visual' }) do
-        vim.api.nvim_set_hl(0, 'WhichKey' .. k .. mode, { link = v, default = true })
+      for _, mode in pairs({ "Normal", "Insert", "Command", "Operator", "Visual" }) do
+        vim.api.nvim_set_hl(0, "WhatKey" .. k .. mode, { link = v, default = true })
       end
     end
   end

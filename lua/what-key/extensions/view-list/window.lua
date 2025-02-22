@@ -121,14 +121,14 @@ function M.show()
   state.buf = vim.api.nvim_create_buf(false, true)
   state.win = vim.api.nvim_open_win(state.buf, false, opts)
 
-  vim.api.nvim_set_option_value("filetype", "WhichKey", { buf = state.buf })
+  vim.api.nvim_set_option_value("filetype", "WhatKey", { buf = state.buf })
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = state.buf })
   vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = state.buf })
   vim.api.nvim_set_option_value("modifiable", true, { buf = state.buf })
 
-  local winhl = "NormalFloat:WhichKeyFloat,CursorLine:WhichKeyCursorLine"
+  local winhl = "NormalFloat:WhatKeyFloat,CursorLine:WhatKeyCursorLine"
   if vim.fn.hlexists("FloatBorder") == 1 then
-    winhl = winhl .. ",FloatBorder:WhichKeyBorder"
+    winhl = winhl .. ",FloatBorder:WhatKeyBorder"
   end
   vim.api.nvim_set_option_value("winhighlight", winhl, { win = state.win })
   vim.api.nvim_set_option_value("foldmethod", "manual", { win = state.win })
@@ -162,7 +162,7 @@ function M.show()
       --   vim.wait(2)
       -- end
     end,
-    group = "WhichKey",
+    group = "WhatKey",
   })
 
   if Config.options.vimade_fade then

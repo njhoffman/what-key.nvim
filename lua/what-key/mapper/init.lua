@@ -1,15 +1,15 @@
-local Config = require('what-key.config')
-local Logger = require('what-key.logger')
-local Tree = require('what-key.tree')
-local Util = require('what-key.util')
-local Hooks = require('what-key.keys.hooks')
-local operators = require('what-key.keys.operators')
-local mapper_parser = require('what-key.mapper.parser')
-local mapper_utils = require('what-key.mapper.utils')
-local state = require('what-key.keys.state')
+local Config = require("what-key.config")
+local Logger = require("what-key.logger")
+local Tree = require("what-key.tree")
+local Util = require("what-key.util")
+local Hooks = require("what-key.keys.hooks")
+local operators = require("what-key.keys.operators")
+local mapper_parser = require("what-key.mapper.parser")
+local mapper_utils = require("what-key.mapper.utils")
+local state = require("what-key.keys.state")
 
 -- magic description string prefix for nvim-native keybindings to display as groups: keys = { { "<leader>g",  desc = "WhichKeyGroup:git" } }
-local secret_group = '^WhichKeyGroup:'
+local secret_group = "^WhatKeyGroup:"
 
 local M = {}
 
@@ -22,13 +22,13 @@ end
 ---@param mode string
 ---@param buf? buffer
 function M.get_tree(mode, buf)
-  if mode == 's' or mode == 'x' then
-    mode = 'v'
-  elseif mode == 'no' then
-    mode = 'n'
+  if mode == "s" or mode == "x" then
+    mode = "v"
+  elseif mode == "no" then
+    mode = "n"
   end
   Util.check_mode(mode, buf)
-  local idx = mode .. (buf and tostring(buf) or '')
+  local idx = mode .. (buf and tostring(buf) or "")
   if not state.mappings[idx] then
     state.mappings[idx] = { mode = mode, buf = buf, tree = Tree:new() }
   end
@@ -36,12 +36,12 @@ function M.get_tree(mode, buf)
 end
 
 function M.get_desc(keymap)
-  local desc = keymap.desc or keymap.rhs or ''
-  if type(keymap.callback) == 'function' and #desc == 0 then
+  local desc = keymap.desc or keymap.rhs or ""
+  if type(keymap.callback) == "function" and #desc == 0 then
     desc = mapper_utils.get_anon_function(debug.getinfo(keymap.callback))
-    if not string.find(desc, '%)$') then
+    if not string.find(desc, "%)$") then
       -- table.insert(unparsed, { cmd_desc, keymap })
-      desc = '(anon)'
+      desc = "(anon)"
     end
   end
   return desc
@@ -56,7 +56,7 @@ function M.update_keymaps(mode, buf)
   local tree = M.get_tree(mode, buf).tree
 
   local function is_nop(keymap)
-    return not keymap.callback and (keymap.rhs == '' or keymap.rhs:lower() == '<nop>')
+    return not keymap.callback and (keymap.rhs == "" or keymap.rhs:lower() == "<nop>")
   end
 
   for _, keymap in pairs(keymaps) do
@@ -70,7 +70,7 @@ function M.update_keymaps(mode, buf)
 
     -- Magic identifier for keygroups in regular keybindings
     if keymap.desc and keymap.desc:find(secret_group) then
-      keymap.desc = keymap.desc:gsub(secret_group, '')
+      keymap.desc = keymap.desc:gsub(secret_group, "")
       is_group = true
       skip = false
     end
@@ -85,7 +85,7 @@ function M.update_keymaps(mode, buf)
 
     local keys = Util.parse_keys(keymap.lhs)
     -- don't include Plug keymaps
-    if string.find(keys.notation[1]:lower(), '<plug>') then
+    if string.find(keys.notation[1]:lower(), "<plug>") then
       skip = true
     end
 
@@ -100,12 +100,12 @@ function M.update_keymaps(mode, buf)
       }
 
       local node = tree:add(mapping)
-      if node and node.mapping and node.mapping.label == '' and mapping.label ~= '' then
+      if node and node.mapping and node.mapping.label == "" and mapping.label ~= "" then
         node.mapping.label = mapping.label
       end
 
       if is_group then
-        mapping.group = not keymap.callback and not keymap.rhs and 'prefix' or 'multi'
+        mapping.group = not keymap.callback and not keymap.rhs and "prefix" or "multi"
       end
     end
   end
@@ -127,12 +127,11 @@ function M.get_map_group(context, prefix_i)
   local function add_mapping(node)
     if node then
       if node.mapping then
-        map_group.mapping = vim.tbl_deep_extend('force', {}, map_group.mapping or {}, node.mapping)
+        map_group.mapping = vim.tbl_deep_extend("force", {}, map_group.mapping or {}, node.mapping)
       end
       for k, child in pairs(node.children) do
-        if child.mapping and child.mapping.label ~= 'which_key_ignore' then
-          map_group.children[k] =
-            vim.tbl_deep_extend('force', {}, map_group.children[k] or {}, child.mapping)
+        if child.mapping and child.mapping.label ~= "what_key_ignore" then
+          map_group.children[k] = vim.tbl_deep_extend("force", {}, map_group.children[k] or {}, child.mapping)
         end
       end
     end
@@ -148,7 +147,7 @@ function M.get_map_group(context, prefix_i)
 end
 
 function M.format_child(mapping, mode, context, buf)
-  if type(mapping.value) == 'string' then
+  if type(mapping.value) == "string" then
     mapping.value = vim.fn.strtrans(mapping.value) or mapping.value
   end
 
@@ -158,8 +157,8 @@ function M.format_child(mapping, mode, context, buf)
   -- check if child mapping is an operator
   local op_children = {}
   local op_i, op_n, op_desc = operators.get_operator(mapping.prefix)
-  if op_n == mapping.prefix and mode == 'n' then
-    mapping.type = 'operator'
+  if op_n == mapping.prefix and mode == "n" then
+    mapping.type = "operator"
     mapping.label = op_desc
     local op_results = M.get_mappings(mode, op_i, buf)
     for _, mapping in pairs(op_results.children) do
@@ -169,7 +168,7 @@ function M.format_child(mapping, mode, context, buf)
 
   -- calculate total number of children this mapping has
   local children = vim.tbl_deep_extend(
-    'force',
+    "force",
     {},
     vim.tbl_keys(submap and submap.children or {}),
     vim.tbl_keys(submap_buf and submap_buf.children or {}),
@@ -177,7 +176,7 @@ function M.format_child(mapping, mode, context, buf)
   )
 
   if #vim.tbl_keys(children) > 0 then
-    mapping.group = mapping.group or 'multi'
+    mapping.group = mapping.group or "multi"
     mapping.child_count = #vim.tbl_keys(children)
   end
   -- if mapping.child_count == 4 then
@@ -189,13 +188,13 @@ function M.format_child(mapping, mode, context, buf)
     or mapping.cmd
     or nil
   if mapping.group then
-    mapping.label = label or '+prefix'
-    mapping.label = mapping.label:gsub('^%+', '')
+    mapping.label = label or "+prefix"
+    mapping.label = mapping.label:gsub("^%+", "")
     mapping.label = Config.options.icons.group .. mapping.label
   else
-    mapping.label = label or ''
+    mapping.label = label or ""
     for _, v in ipairs(Config.options.hidden) do
-      mapping.label = mapping.label:gsub(v, '')
+      mapping.label = mapping.label:gsub(v, "")
     end
   end
 end
@@ -213,7 +212,7 @@ function M.get_mappings(mode, prefix_i, buf)
       mapping.key = Config.options.key_labels[mapping.key]
     end
 
-    local skip = Util.t(mapping.key) == Util.t('<esc>')
+    local skip = Util.t(mapping.key) == Util.t("<esc>")
     if not mapping.label then
       if mapping.group and Config.options.ignore_unnamed_groups then
         skip = true
@@ -228,7 +227,7 @@ function M.get_mappings(mode, prefix_i, buf)
       -- remove duplicated keymap
       local exists = false
       for k, v in pairs(tmp_mappings) do
-        if type(v) == 'table' and v.key == mapping.key then
+        if type(v) == "table" and v.key == mapping.key then
           tmp_mappings[k] = mapping
           exists = true
           break
@@ -247,14 +246,14 @@ function M.get_mappings(mode, prefix_i, buf)
     elseif a.group and not b.group or (not a.group and b.group) then
       return a.group and not b.group
     elseif type(a.children) ~= type(b.children) then
-      return type(a.children) == 'number'
+      return type(a.children) == "number"
     elseif #a.key ~= #b.key then
       return #a.key < #b.key
     else
-      local ak = (a.key or ''):lower()
-      local bk = (b.key or ''):lower()
-      local aw = ak:match('[a-z]') and 1 or 0
-      local bw = bk:match('[a-z]') and 1 or 0
+      local ak = (a.key or ""):lower()
+      local bk = (b.key or ""):lower()
+      local aw = ak:match("[a-z]") and 1 or 0
+      local bw = bk:match("[a-z]") and 1 or 0
       if aw == bw then
         if ak == bk then
           return b.key < a.key

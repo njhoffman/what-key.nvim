@@ -1,8 +1,8 @@
-local Config = require('what-key.config')
-local Mapper = require('what-key.mapper')
-local Logger = require('what-key.logger')
+local Config = require("what-key.config")
+local Mapper = require("what-key.mapper")
+local Logger = require("what-key.logger")
 
-local state = require('what-key.extensions.view-list.state')
+local state = require("what-key.extensions.view-list.state")
 
 local render_breadcrumbs = function(self)
   if not self.results.mapping then
@@ -17,7 +17,7 @@ local render_breadcrumbs = function(self)
   local buf_path = Mapper.get_tree(mode, self.results.buf).tree:path(prefix_i)
   local path = Mapper.get_tree(mode).tree:path(prefix_i)
   local len = #self.results.mapping.keys.notation
-  local cmd_line = { { '(' .. mode .. ') ', 'WhichKeyMode' } }
+  local cmd_line = { { "(" .. mode .. ") ", "WhatKeyMode" } }
 
   for i = 1, len, 1 do
     local node = buf_path[i]
@@ -32,9 +32,9 @@ local render_breadcrumbs = function(self)
     if Config.options.key_labels[step] then
       step = Config.options.key_labels[step]
     end
-    table.insert(cmd_line, { step, 'WhichKeyGroup' })
+    table.insert(cmd_line, { step, "WhatKeyGroup" })
     if i ~= #self.mapping.keys.notation then
-      table.insert(cmd_line, { ' ' .. Config.options.icons.breadcrumb .. ' ', 'WhichKeySeparator' })
+      table.insert(cmd_line, { " " .. Config.options.icons.breadcrumb .. " ", "WhatKeySeparator" })
     end
   end
 
@@ -45,13 +45,12 @@ local render_breadcrumbs = function(self)
 
   local col = 1
   for _, text in ipairs(cmd_line) do
-    self.breadcrumbs:set(1, col, text[1], text[2] and text[2]:gsub('WhichKey', '') or nil)
+    self.breadcrumbs:set(1, col, text[1], text[2] and text[2]:gsub("WhatKey", "") or nil)
     col = col + vim.fn.strwidth(text[1])
   end
 
-  if type(Config.options.user_hooks.breadcrumbs) == 'function' then
-    self.breadcrumbs =
-      Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
+  if type(Config.options.user_hooks.breadcrumbs) == "function" then
+    self.breadcrumbs = Config.options.user_hooks.breadcrumbs(self.breadcrumbs, cmd_line, self.results)
   end
   return self.breadcrumbs
 end

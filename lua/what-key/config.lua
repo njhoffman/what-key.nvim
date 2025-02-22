@@ -1,6 +1,6 @@
 local M = {}
 
-M.namespace = vim.api.nvim_create_namespace("WhichKey")
+M.namespace = vim.api.nvim_create_namespace("WhatKey")
 
 ---@class Options
 local defaults = {
@@ -10,7 +10,7 @@ local defaults = {
     -- the presets plugin, adds help for a bunch of default keybindings in Neovim
     -- No actual key bindings are created
     spelling = {
-      enabled = true, -- enabling this will show WhichKey when pressing z= to select spelling suggestions
+      enabled = true, -- enabling this will show WhatKey when pressing z= to select spelling suggestions
       suggestions = 20, -- how many suggestions should be shown in the list?
     },
   },
@@ -52,12 +52,12 @@ local defaults = {
     -- -- both those explicitly added in a mapping
     -- -- and those from rules
     -- mappings = true,
-    -- --- See `lua/which-key/icons.lua` for more details
+    -- --- See `lua/what-key/icons.lua` for more details
     -- --- Set to `false` to disable keymap icons from rules
     -- ---@type wk.IconRule[]|false
     -- rules = {},
     -- -- use the highlights from mini.icons
-    -- -- When `false`, it will use `WhichKeyIcon` instead
+    -- -- When `false`, it will use `WhatKeyIcon` instead
     -- colors = true,
     -- -- used by key format
     -- keys = {
@@ -96,7 +96,7 @@ local defaults = {
     help_menu    = '<F6>',       -- binding to scroll down inside the popup
     toggle_debug = '<F5>',       -- show detailed keymapping information
     options_menu = '<F4>',       -- launch options menu
-    launch_wk    = '<F3>',       -- launch which-key manually
+    launch_wk    = '<F3>',       -- launch what-key manually
     scroll_down  = '<C-S-Down>', -- binding to scroll down inside the popup
     scroll_up    = '<C-S-Up>',   -- binding to scroll up inside the popup
     page_down    = '<M-f>',      -- binding to scroll down inside the popup
@@ -121,7 +121,7 @@ local defaults = {
   },
   other_layouts = {},
 
-  show_help = true, -- show a help message in the command line for using WhichKey
+  show_help = true, -- show a help message in the command line for using WhatKey
   show_keys = true, -- show the currently pressed key and its label as a message in the command line
 
   -- triggers = { blacklist = {}, nowait = {}, list = {},
@@ -133,7 +133,7 @@ local defaults = {
     groups = true,
     presets = true,
   },
-  -- list of triggers, where WhichKey should not wait for timeoutlen and show immediately
+  -- list of triggers, where WhatKey should not wait for timeoutlen and show immediately
   triggers_nowait = {
     -- marks
     "`",
@@ -147,12 +147,12 @@ local defaults = {
     "z=",
   },
   triggers_blacklist = {
-    -- list of mode / prefixes that should never be hooked by WhichKey
+    -- list of mode / prefixes that should never be hooked by WhatKey
     -- this is mostly relevant for keymaps that start with a native binding
     i = { "j", "k" },
     v = { "j", "k" },
   },
-  -- disable the WhichKey popup for certain buf types and file types.
+  -- disable the WhatKey popup for certain buf types and file types.
   -- Disabled by deafult for Telescope
   disable = {
     buftypes = {},

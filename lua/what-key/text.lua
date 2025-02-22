@@ -57,7 +57,7 @@ function Text:set(row, col, str, group)
     return
   end
   -- set highlights
-  self:highlight(row, col, col + Text.len(str), "WhichKey" .. group)
+  self:highlight(row, col, col + Text.len(str), "WhatKey" .. group)
 end
 
 function Text:highlight(row, from, to, group)

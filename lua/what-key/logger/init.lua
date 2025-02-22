@@ -24,10 +24,10 @@ local get_logger = function(level)
       end
     elseif level == "warn" then
       _logger:warn(msg, ...)
-      vim.notify(msg, vim.log.levels.WARN, { title = "WhichKey" })
+      vim.notify(msg, vim.log.levels.WARN, { title = "WhatKey" })
     elseif level == "error" then
       _logger:error(msg, ...)
-      vim.notify(msg, vim.log.levels.ERROR, { title = "WhichKey" })
+      vim.notify(msg, vim.log.levels.ERROR, { title = "WhatKey" })
     end
   end
 end

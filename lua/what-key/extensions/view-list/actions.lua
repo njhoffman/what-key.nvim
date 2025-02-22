@@ -62,7 +62,7 @@ local M = {}
 
 M.action_keys = vim.tbl_deep_extend("force", vim.tbl_values(maps), { "<esc>", "<bs>" })
 
--- check if input matches local (internal) whichkey maps
+-- check if input matches local (internal) whatkey maps
 function M.check_internal(c, mode)
   local result = {}
   local action_key = internal_maps[c]

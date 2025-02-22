@@ -1,6 +1,6 @@
-local Keys = require('what-key.keys')
-local Util = require('what-key.util')
-local Config = require('what-key.config')
+local Keys = require("what-key.keys")
+local Util = require("what-key.util")
+local Config = require("what-key.config")
 
 local M = {}
 
@@ -10,12 +10,12 @@ function M.setup()
   for name, opts in pairs(Config.options.plugins) do
     -- only setup plugin if we didnt load it before
     if not M.plugins[name] then
-      if type(opts) == 'boolean' then
+      if type(opts) == "boolean" then
         opts = { enabled = opts }
       end
       opts.enabled = opts.enabled ~= false
       if opts.enabled then
-        M.plugins[name] = require('what-key.plugins.' .. name)
+        M.plugins[name] = require("what-key.plugins." .. name)
         M._setup(M.plugins[name], opts)
       end
     end
@@ -27,14 +27,14 @@ function M._setup(plugin, opts)
   if plugin.actions then
     for _, trigger in pairs(plugin.actions) do
       local prefix = trigger.trigger
-      local mode = trigger.mode or 'n'
+      local mode = trigger.mode or "n"
       local label = trigger.label or plugin.name
       Keys.register({ [prefix] = { label, plugin = plugin.name } }, { mode = mode })
     end
   end
 
   if plugin.setup then
-    plugin.setup(require('which-key'), opts, Config.options)
+    plugin.setup(require("what-key"), opts, Config.options)
   end
 end
 

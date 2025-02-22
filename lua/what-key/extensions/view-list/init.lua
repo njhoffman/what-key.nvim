@@ -1,6 +1,6 @@
-local Config = require('what-key.config')
-local view_utils = require('what-key.extensions.view-list.utils')
-local state = require('what-key.extensions.view-list.state')
+local Config = require("what-key.config")
+local view_utils = require("what-key.extensions.view-list.utils")
+local state = require("what-key.extensions.view-list.state")
 
 local highlight = vim.api.nvim_buf_add_highlight
 
@@ -9,13 +9,13 @@ local animate_height = function(win, height)
   if height > current_height then
     for i = current_height, height, 1 do
       vim.api.nvim_win_set_height(win, i)
-      vim.cmd('redraw')
+      vim.cmd("redraw")
       vim.wait(1)
     end
   else
     for i = current_height, height, -1 do
       vim.api.nvim_win_set_height(win, i)
-      vim.cmd('redraw')
+      vim.cmd("redraw")
       vim.wait(1)
     end
   end
@@ -46,7 +46,7 @@ local function render_list(text)
 end
 
 local function render_footer(breadcrumbs)
-  -- hl = { [1] = { from = 1, group = "WhichKeyMode", line = 0, to = 5 },
+  -- hl = { [1] = { from = 1, group = "WhatKeyMode", line = 0, to = 5 },
   if breadcrumbs and breadcrumbs.lines then
     vim.api.nvim_win_set_config(state.win, {
       footer = breadcrumbs.lines[1],
@@ -68,8 +68,8 @@ local function render_title(title)
   -- vim.dbglog('**', title)
 end
 
-local window = require('what-key.extensions.view-list.window')
-local Layout = require('what-key.extensions.view-list.layout')
+local window = require("what-key.extensions.view-list.window")
+local Layout = require("what-key.extensions.view-list.layout")
 
 local render = function(vstate, opts, map_group)
   if view_utils.is_enabled(vstate.parent_buf) then

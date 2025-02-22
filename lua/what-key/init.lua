@@ -4,7 +4,7 @@ local state = require("what-key.state")
 local start_cmds = require("what-key.start")
 local aucommands = require("what-key.aucommands")
 
----@class WhichKey
+---@class WhatKey
 local M = {}
 M.start = start_cmds.start
 M.start_command = start_cmds.start_command
@@ -32,10 +32,10 @@ end
 
 -- Defer registering keymaps until VimEnter
 function M.register(mappings, opts)
-  -- -- Fixes a bug, where the WhichKey window doesn’t show up in the visual mode.
-  --     -- The open bug in question: https://github.com/folke/which-key.nvim/issues/458.
+  -- -- Fixes a bug, where the WhatKey window doesn’t show up in the visual mode.
+  --     -- The open bug in question: https://github.com/folke/What-key.nvim/issues/458.
   --     if mode == "v" or mode == "x" then
-  --       vim.keymap.set(mode, keymap, "<cmd>WhichKey " .. keymap .. " " .. mode .. "<cr>")
+  --       vim.keymap.set(mode, keymap, "<cmd>WhatKey " .. keymap .. " " .. mode .. "<cr>")
   --     end
   if not opts or type(opts.mode) == "nil" then
     Logger.info("No mode passed to register: " .. vim.inspect(mappings, opts))
@@ -58,7 +58,7 @@ function M.register(mappings, opts)
   -- M.add(mappings, { version = 1 })
 end
 
---- Add mappings to which-key
+--- Add mappings to What-key
 ---@param mappings wk.Spec
 ---@param opts? wk.Parse
 local added = {}
@@ -103,9 +103,9 @@ end
 
 function M.reset()
   -- local mappings = Keys.mappings
-  require("plenary.reload").reload_module("which-key")
+  require("plenary.reload").reload_module("what-key")
   -- require("what-key.Keys").mappings = mappings
-  require("which-key").setup()
+  require("what-key").setup()
 end
 
 return M

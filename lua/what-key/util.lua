@@ -85,8 +85,44 @@ local Tokens = {
   [">"] = strbyte(">"),
   ["-"] = strbyte("-"),
 }
+
+-- --- Returns the keys of a keymap, taking multibyte and special keys into account
+-- ---@param lhs string
+-- ---@param opts? {norm?: boolean}
+-- function M.keys(lhs, opts)
+--   lhs = opts and opts.norm == false and lhs or M.norm(lhs)
+--   if M.cache.keys[lhs] then
+--     return M.cache.keys[lhs]
+--   end
+--   local ret = {} ---@type string[]
+--   local bytes = vim.fn.str2list(lhs) ---@type number[]
+--   local special = nil ---@type string?
+--   for _, byte in ipairs(bytes) do
+--     local char = vim.fn.nr2char(byte) ---@type string
+--     if char == "<" then
+--       special = "<"
+--     elseif special then
+--       special = special .. char
+--       if char == ">" then
+--         ret[#ret + 1] = special == "<lt>" and "<" or special
+--         special = nil
+--       end
+--     else
+--       ret[#ret + 1] = char
+--     end
+--   end
+--
+--   M.cache.keys[lhs] = ret
+--   return ret
+-- end
+
 ---@return KeyCodes
 function M.parse_keys(keystr)
+  --   lhs = opts and opts.norm == false and lhs or M.norm(lhs)
+  -- if not require("which-key.config").debug then
+  --   return
+  -- end
+
   M.check_cache()
   if cache[keystr] then
     return cache[keystr]
@@ -110,6 +146,10 @@ function M.parse_keys(keystr)
   --- | "SpecialNoClose"
   local start = 1
   local i = start
+
+  local mapleader = vim.g.mapleader
+  mapleader = mapleader and M.t(mapleader)
+
   ---@type ParseState
   local state = "Character"
   while i <= #keystr do
@@ -128,13 +168,14 @@ function M.parse_keys(keystr)
     i = i + utf8len_tab[c + 1]
     if state == "Character" then
       local k = strsub(keystr, start, i - 1)
-      notation[#notation + 1] = k == " " and "<space>" or k
+      if i == 1 and internal[i] == mapleader then
+        k = "<leader>"
+      elseif k == " " then
+        k = "<space>"
+      end
+      notation[#notation + 1] = k
     end
   end
-
-  local mapleader = vim.g.mapleader
-  mapleader = mapleader and M.t(mapleader)
-  notation[1] = internal[1] == mapleader and "<leader>" or notation[1]
 
   if #notation ~= #internal then
     error(vim.inspect({ keystr = keystr, internal = internal, notation = notation }))
@@ -190,7 +231,7 @@ function M.parse_internal(keystr)
 end
 
 function M.check_mode(mode, buf)
-  if not ("nvsxoiRct"):find(mode) then
+  if not ("nvsxoiRct"):find(tostring(mode)) then
     Logger.error(string.format("Invalid mode %q for buf %d", mode, buf or 0))
     return false
   end

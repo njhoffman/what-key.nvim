@@ -39,9 +39,35 @@ M.log_key = function(results, opts, internal_key)
   M.logger.debug(line)
 end
 
+M.log_row = function(row)
+  -- ﳠ ∅  󰐕   落  󰞷 󰡱  ﮜ 
+  -- local map = results.mapping or {}
+  -- local line = ""
+  -- line = line
+  -- .. (opts._op_icon and opts._op_icon or "  ")
+  -- .. (opts._load_window == true and " " or "  ")
+  -- .. time_diff:sub(1, 8)
+
+  -- local mode = results.mode or map.mode
+  -- line = line .. " (" .. mode .. ") " .. (#mode == 2 and " " or "  ")
+  -- line = line .. (type(results.prefix_i) == "string" and vim.fn.keytrans(results.prefix_i) or "")
+
+  -- local child_count = results.children and #results.children or 0
+  -- line = line .. string.rep(" ", 9 - #(results.prefix_i or "") - #tostring(child_count)) .. child_count .. "   "
+  local row_out = vim.fn.deepcopy(row, true)
+  row_out.keys.raw = vim.fn.strtrans(row_out.keys.raw)
+  for k, v in pairs(row_out.keys.internal) do
+    if type(v) == "string" then
+      row_out.keys.internal[k] = vim.fn.strtrans(v)
+    end
+  end
+  M.logger.debug(row_out)
+  vim.dbglog(row_out)
+end
+
 M.log_startup = function(start_time)
   local time_diff = vim.fn.reltimestr(vim.fn.reltime(start_time))
-  local title = "襤" .. time_diff:sub(1, 8) .. "  "
+  local title = " " .. time_diff:sub(1, 8) .. "  "
   local line = title .. log_utils.key_counts()
   M.logger.info(line)
 end

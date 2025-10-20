@@ -5,7 +5,6 @@ local modules = {
 }
 
 --  󰞷 󰡱 ∅ 󰐕 
-
 local debug_flag = true
 local get_logger = function(level)
   local _logger = require("logger").init("whatkey")

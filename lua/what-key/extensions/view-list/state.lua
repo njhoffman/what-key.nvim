@@ -1,6 +1,7 @@
 local state = {
   win = nil,
   buf = nil,
+  rows = {},
   debug = {
     enabled = false,
     win = nil,

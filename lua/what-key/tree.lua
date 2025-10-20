@@ -1,4 +1,4 @@
-local Util = require('what-key.util')
+local Util = require("what-key.util")
 
 ---@class Tree
 ---@field root Node
@@ -15,7 +15,7 @@ local Node
 
 ---@return Tree
 function Tree:new()
-  local this = { root = { children = {}, prefix_i = '', prefix_n = '' } }
+  local this = { root = { children = {}, prefix_i = "", prefix_n = "" } }
   setmetatable(this, self)
   return this
 end
@@ -25,16 +25,16 @@ end
 ---@param plugin_context? any
 ---@return Node?
 function Tree:get(prefix_i, index, plugin_context)
-  local prefix = Util.parse_internal(prefix_i)
-  local node = self.root
+  local prefix = Util.parse_internal(prefix_i or "")
   index = index or #prefix
   if index < 0 then
     index = #prefix + index
   end
+  local node = self.root
   for i = 1, index, 1 do
     node = node.children[prefix[i]]
     if node and plugin_context and node.mapping and node.mapping.plugin then
-      local children = require('what-key.plugins').invoke(node.mapping, plugin_context)
+      local children = require("what-key.plugins").invoke(node.mapping, plugin_context)
       node.children = {}
       for _, child in pairs(children) do
         self:add(child)
@@ -69,8 +69,8 @@ function Tree:add(mapping)
   local prefix_i = mapping.keys.internal
   local prefix_n = mapping.keys.notation
   local node = self.root
-  local path_i = ''
-  local path_n = ''
+  local path_i = ""
+  local path_n = ""
   for i = 1, #prefix_i, 1 do
     path_i = path_i .. prefix_i[i]
     path_n = path_n .. prefix_n[i]
@@ -79,7 +79,7 @@ function Tree:add(mapping)
     end
     node = node.children[prefix_i[i]]
   end
-  node.mapping = vim.tbl_deep_extend('force', node.mapping or {}, mapping)
+  node.mapping = vim.tbl_deep_extend("force", node.mapping or {}, mapping)
 end
 
 ---@param cb fun(node:Node)

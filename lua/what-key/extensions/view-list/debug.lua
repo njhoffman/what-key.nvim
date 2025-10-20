@@ -7,7 +7,6 @@ M.hide_debug = function()
 end
 
 M.show_debug = function()
-  vim.dbglog("show debug")
 
   -- local opts = {
   --   relative = 'editor',

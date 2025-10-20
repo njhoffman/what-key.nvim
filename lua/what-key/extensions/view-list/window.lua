@@ -1,3 +1,4 @@
+local Logger = require("what-key.logger")
 local Mapper = require("what-key.mapper")
 local Config = require("what-key.config")
 local view_utils = require("what-key.extensions.view-list.utils")
@@ -9,29 +10,35 @@ local state = require("what-key.extensions.view-list.state")
 
 local scroll = function(up, scrolloff)
   local delta = 1
-  local height = vim.api.nvim_win_get_height(state.win)
+  local bufheight = vim.api.nvim_buf_line_count(state.buf)
   local cursor = vim.api.nvim_win_get_cursor(state.win)
-  vim.api.nvim_set_option_value("scrolloff", height, { win = state.win })
+  -- vim.api.nvim_set_option_value("scrolloff", height, { win = state.win })
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
-    cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
+    -- cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
+    cursor[1] = math.min(cursor[1] + delta, bufheight)
   end
+
   view_utils.set_cursor(cursor[1])
+  Logger.log_row(state.rows[cursor[1]])
 end
 
 local page = function(up)
+  local bufheight = vim.api.nvim_buf_line_count(state.buf)
   local height = vim.api.nvim_win_get_height(state.win)
   local cursor = vim.api.nvim_win_get_cursor(state.win)
   local delta = math.floor(height / 3)
-  vim.api.nvim_set_option_value("scrolloff", height, { win = state.win })
+  -- vim.api.nvim_set_option_value("scrolloff", height, { win = state.win })
+
   if up then
     cursor[1] = math.max(cursor[1] - delta, 1)
   else
-    cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
-    cursor[1] = math.max(cursor[1], math.ceil(height / 2) + 1)
+    -- cursor[1] = math.min(cursor[1] + delta, vim.api.nvim_buf_line_count(state.buf) - math.ceil(height / 2) + 1)
+    -- cursor[1] = math.max(cursor[0], math.ceil(height / 2) + 1)
+    cursor[1] = math.min(cursor[1] + delta, bufheight)
   end
+
   view_utils.set_cursor(cursor[1])
 end
 
@@ -130,48 +137,51 @@ function M.show()
   if vim.fn.hlexists("FloatBorder") == 1 then
     winhl = winhl .. ",FloatBorder:WhatKeyBorder"
   end
+  vim.api.nvim_set_option_value("scrolloff", 1, { win = state.win })
   vim.api.nvim_set_option_value("winhighlight", winhl, { win = state.win })
   vim.api.nvim_set_option_value("foldmethod", "manual", { win = state.win })
-
   vim.api.nvim_set_option_value("winblend", Config.options.window.winblend, { win = state.win })
   vim.api.nvim_set_option_value("cursorline", true, { win = state.win })
 
-  local old_fadelevel = nil
-  vim.api.nvim_create_autocmd("WinClosed", {
-    buffer = state.buf,
-    nested = true,
-    once = true,
-    callback = function(ev)
-      if Config.options.vimade_fade then
-        vim.cmd("VimadeUnfadeActive")
-        vim.cmd("VimadeFadeLevel " .. old_fadelevel)
-      end
+  vim.api.nvim_win_set_cursor(state.win, { 1, 0 })
+  -- view_utils.set_cursor(1)
 
-      -- local vstate = require('what-key.view.state')
-      -- vim.api.nvim_exec_autocmds(
-      --   'ModeChanged',
-      --   { pattern = vstate.mode .. ':' .. vim.api.nvim_get_mode().mode }
-      -- )
+  -- local old_fadelevel = nil
+  -- vim.api.nvim_create_autocmd("WinClosed", {
+  --   buffer = state.buf,
+  --   nested = true,
+  --   once = true,
+  --   callback = function(ev)
+  --     if Config.options.vimade_fade then
+  --       vim.cmd("VimadeUnfadeActive")
+  --       vim.cmd("VimadeFadeLevel " .. old_fadelevel)
+  --     end
 
-      -- local winid = tonumber(ev.match)
-      -- local blend = vim.api.nvim_win_get_option(winid, 'winblend')
-      -- while blend < 100 do
-      --   blend = blend + 2
-      --   vim.api.nvim_win_set_option(winid, 'winblend', blend)
-      --   vim.cmd('redraw')
-      --   vim.wait(2)
-      -- end
-    end,
-    group = "WhatKey",
-  })
+  --     -- local vstate = require('what-key.view.state')
+  --     -- vim.api.nvim_exec_autocmds(
+  --     --   'ModeChanged',
+  --     --   { pattern = vstate.mode .. ':' .. vim.api.nvim_get_mode().mode }
+  --     -- )
 
-  if Config.options.vimade_fade then
-    old_fadelevel = vim.api.nvim_get_var("vimade").fadelevel
-    local fadelevel = type(Config.options.vimade_fade) == "number" and Config.options.vimade_fade or 0.75
-    vim.api.nvim_win_set_var(state.win, "vimade_disabled", true)
-    vim.cmd("VimadeFadeLevel " .. fadelevel)
-    vim.cmd("VimadeFadeActive")
-  end
+  --     -- local winid = tonumber(ev.match)
+  --     -- local blend = vim.api.nvim_win_get_option(winid, 'winblend')
+  --     -- while blend < 100 do
+  --     --   blend = blend + 2
+  --     --   vim.api.nvim_win_set_option(winid, 'winblend', blend)
+  --     --   vim.cmd('redraw')
+  --     --   vim.wait(2)
+  --     -- end
+  --   end,
+  --   group = "WhatKey",
+  -- })
+
+  -- if Config.options.vimade_fade then
+  --   old_fadelevel = vim.api.nvim_get_var("vimade").fadelevel
+  --   local fadelevel = type(Config.options.vimade_fade) == "number" and Config.options.vimade_fade or 0.75
+  --   vim.api.nvim_win_set_var(state.win, "vimade_disabled", true)
+  --   vim.cmd("VimadeFadeLevel " .. fadelevel)
+  --   vim.cmd("VimadeFadeActive")
+  -- end
 end
 
 function M.hide()

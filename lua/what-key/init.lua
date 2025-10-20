@@ -38,7 +38,13 @@ function M.register(mappings, opts)
   --       vim.keymap.set(mode, keymap, "<cmd>WhatKey " .. keymap .. " " .. mode .. "<cr>")
   --     end
   if not opts or type(opts.mode) == "nil" then
-    Logger.info("No mode passed to register: " .. vim.inspect(mappings, opts))
+    for _, mapping in pairs(mappings) do
+      if type(mapping.mode) ~= "string" then
+        Logger.info("No mode passed to register: " .. vim.inspect(mapping, opts))
+      else
+        table.insert(state.queue, { mapping, opts })
+      end
+    end
   else
     local modes = type(opts.mode) == "string" and { opts.mode } or opts.mode
     for _, mode in pairs(modes) do
@@ -47,7 +53,6 @@ function M.register(mappings, opts)
     end
   end
   schedule_load()
-  -- vim.dbglog(state.queue)
   -- migrate to v2
   -- if opts then
   --   for k, v in pairs(opts) do
@@ -82,13 +87,11 @@ end
 
 -- Load mappings and update only once
 function M.load(vim_enter)
-  -- vim.dbglog("added " .. #added .. ", existing: " .. #state.queue, state.queue[1], state.queue[2], added[1], added[2])
   if state.loaded then
-    vim.dbglog("state loaded", #state.queue)
+    vim.dbglog("already laoded", #state.queue)
     aucommands.register_queue()
     return
-  else
-    vim.dbglog("already laoded", #state.queue)
+    -- else
   end
   state.load_start = vim.fn.reltime()
   -- require('what-key.plugins').setup()
@@ -97,7 +100,7 @@ function M.load(vim_enter)
   aucommands.setup()
   -- require("what-key.onkey").setup()
   Keys.setup()
-  aucommands.register_queue(true)
+  aucommands.register_queue(_, true)
   state.loaded = true
 end
 

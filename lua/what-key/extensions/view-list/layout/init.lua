@@ -1,4 +1,4 @@
-local Text = require('what-key.text')
+local Text = require("what-key.text")
 
 ---@class Layout
 ---@field mapping Mapping
@@ -42,11 +42,11 @@ function Layout:make_title()
 end
 
 function Layout:make_list()
-  return require('what-key.extensions.view-list.layout.list')(self)
+  return require("what-key.extensions.view-list.layout.list")(self)
 end
 
 function Layout:make_breadcrumbs(history)
-  return require('what-key.extensions.view-list.layout.breadcrumbs')(self)
+  return require("what-key.extensions.view-list.layout.breadcrumbs")(self)
 end
 
 return Layout

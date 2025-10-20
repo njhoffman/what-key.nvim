@@ -36,60 +36,80 @@ local defaults = {
   hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "^:", "^ ", "^call ", "^lua " }, -- hide mapping boilerplate
   ignored = {}, -- list of patterns to ignore complete key
 
+  -- Functions/Lua Patterns for formatting the labels
+  replace = {
+    key = {
+      function(key)
+        return require("what-key.mapper").format_keys(key)
+      end,
+      { "<Space>", "SPC" },
+    },
+    desc = {
+      { "<Plug>%(?(.*)%)?", "%1" },
+      { "^%+", "" },
+      { "<[cC]md>", "" },
+      { "<[cC][rR]>", "" },
+      { "<[sS]ilent>", "" },
+      { "^lua%s+", "" },
+      { "^call%s+", "" },
+      { "^:%s*", "" },
+    },
+  },
+  icons = {
+    breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
+    separator = "➜", -- symbol used between a key and it's label
+    group = "+", -- symbol prepended to a group
+    ellipsis = "…",
+    -- set to false to disable all mapping icons,
+    -- both those explicitly added in a mapping
+    -- and those from rules
+    mappings = true,
+    --- See `lua/which-key/icons.lua` for more details
+    --- Set to `false` to disable keymap icons from rules
+    ---@type wk.IconRule[]|false
+    rules = {},
+    -- use the highlights from mini.icons
+    -- When `false`, it will use `WhichKeyIcon` instead
+    colors = true,
+    -- used by key format
+    keys = {
+      Up = " ",
+      Down = " ",
+      Left = " ",
+      Right = " ",
+      C = "󰘴 ",
+      M = "󰘵 ",
+      D = "󰘳 ",
+      S = "󰘶 ",
+      CR = "󰌑 ",
+      Esc = "󱊷 ",
+      ScrollWheelDown = "󱕐 ",
+      ScrollWheelUp = "󱕑 ",
+      NL = "󰌑 ",
+      BS = "󰁮",
+      Space = "󱁐 ",
+      Tab = "󰌒 ",
+      F1 = "󱊫",
+      F2 = "󱊬",
+      F3 = "󱊭",
+      F4 = "󱊮",
+      F5 = "󱊯",
+      F6 = "󱊰",
+      F7 = "󱊱",
+      F8 = "󱊲",
+      F9 = "󱊳",
+      F10 = "󱊴",
+      F11 = "󱊵",
+      F12 = "󱊶",
+    },
+  },
+
   key_labels = {
     -- override the label used to display some keys. It doesn't effect WK in any other way.
     -- For example:
     -- ["<space>"] = "SPC",
     -- ["<cr>"] = "RET",
     -- ["<tab>"] = "TAB",
-  },
-  icons = {
-    breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
-    separator = "➜", -- symbol used between a key and it's label
-    group = "+", -- symbol prepended to a group
-    -- ellipsis = "…",
-    -- -- set to false to disable all mapping icons,
-    -- -- both those explicitly added in a mapping
-    -- -- and those from rules
-    -- mappings = true,
-    -- --- See `lua/what-key/icons.lua` for more details
-    -- --- Set to `false` to disable keymap icons from rules
-    -- ---@type wk.IconRule[]|false
-    -- rules = {},
-    -- -- use the highlights from mini.icons
-    -- -- When `false`, it will use `WhatKeyIcon` instead
-    -- colors = true,
-    -- -- used by key format
-    -- keys = {
-    --   Up = " ",
-    --   Down = " ",
-    --   Left = " ",
-    --   Right = " ",
-    --   C = "󰘴 ",
-    --   M = "󰘵 ",
-    --   D = "󰘳 ",
-    --   S = "󰘶 ",
-    --   CR = "󰌑 ",
-    --   Esc = "󱊷 ",
-    --   ScrollWheelDown = "󱕐 ",
-    --   ScrollWheelUp = "󱕑 ",
-    --   NL = "󰌑 ",
-    --   BS = "󰁮",
-    --   Space = "󱁐 ",
-    --   Tab = "󰌒 ",
-    --   F1 = "󱊫",
-    --   F2 = "󱊬",
-    --   F3 = "󱊭",
-    --   F4 = "󱊮",
-    --   F5 = "󱊯",
-    --   F6 = "󱊰",
-    --   F7 = "󱊱",
-    --   F8 = "󱊲",
-    --   F9 = "󱊳",
-    --   F10 = "󱊴",
-    --   F11 = "󱊵",
-    --   F12 = "󱊶",
-    -- },
   },
   --stylua: ignore
   mappings = {

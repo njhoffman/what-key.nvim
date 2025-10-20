@@ -1,6 +1,7 @@
 local Config = require("what-key.config")
 local Util = require("what-key.util")
 
+local preview = require("what-key.extensions.view-list.preview")
 local state = require("what-key.extensions.view-list.state")
 local window = require("what-key.extensions.view-list.window")
 local debug = require("what-key.extensions.view-list.debug")
@@ -32,16 +33,17 @@ end
 
 --stylua: ignore
 local actions = {
-  options_menu = options_menu,
-  help_menu    = help_menu,
-  launch_wk    = window.open,
-  hide         = window.hide,
-  back         = window.back,
-  page_down    = window.page_down,
-  page_up      = window.page_up,
-  scroll_down  = window.scroll_down,
-  scroll_up    = window.scroll_up,
-  toggle_debug = debug.toggle_debug
+  options_menu   = options_menu,
+  help_menu      = help_menu,
+  launch_wk      = window.open,
+  hide           = window.hide,
+  back           = window.back,
+  page_down      = window.page_down,
+  page_up        = window.page_up,
+  scroll_down    = window.scroll_down,
+  scroll_up      = window.scroll_up,
+  toggle_debug   = debug.toggle_debug,
+  toggle_preview = preview.toggle_preview,
 }
 
 -- check if input matches user_popup_mappings config

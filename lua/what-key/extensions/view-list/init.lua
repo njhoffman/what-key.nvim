@@ -40,6 +40,9 @@ local function render_list(text)
   for _, data in ipairs(text.hl) do
     highlight(state.buf, Config.namespace, data.group, data.line, data.from, data.to)
   end
+
+  require("scrollview").refresh()
+
   -- vim.api.nvim_win_call(state.win, function()
   --   vim.fn.winrestview(view)
   -- end)

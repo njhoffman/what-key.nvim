@@ -26,7 +26,7 @@ function M.register(mappings, opts)
       Mapper.get_tree(mapping.mode)
     end
     if mapping.cmd ~= nil then
-      vim.dbglog("**** NO MAPPING *****", mapping)
+      -- vim.dbglog("**** NO MAPPING *****", mapping)
       -- Mapper.map(mapping.mode, mapping.prefix, mapping.cmd, mapping.buf, mapping.opts)
     end
     Mapper.get_tree(mapping.mode, mapping.buf).tree:add(mapping)
@@ -41,14 +41,14 @@ function M.update(buf, first_load)
   for k, tree in pairs(state.mappings) do
     if tree.buf and not vim.api.nvim_buf_is_valid(tree.buf) then
       -- remove group for invalid buffers
-      vim.dbglog("update 0", tree.buf, buf, first_load)
+      -- vim.dbglog("update 0", tree.buf, buf, first_load)
       state.mappings[k] = nil
     elseif buf and tree.buf and tree.buf == buf then
-      vim.dbglog("update 1", tree.mode, tree.buf, buf, first_load)
+      -- vim.dbglog("update 1", tree.mode, tree.buf, buf, first_load)
       Mapper.update_keymaps(tree.mode, tree.buf, first_load)
       Hooks.add_hooks(tree.mode, tree.buf, tree.tree.root)
     elseif (tree.buf == nil or tree.buf == 0) and (buf == nil or buf == 0) then
-      vim.dbglog("update 2", tree.mode, tree.buf, buf, first_load)
+      -- vim.dbglog("update 2", tree.mode, tree.buf, buf, first_load)
       Mapper.update_keymaps(tree.mode, tree.buf, first_load)
       Hooks.add_hooks(tree.mode, tree.buf, tree.tree.root)
     end
